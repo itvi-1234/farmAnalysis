@@ -1,16 +1,68 @@
-# React + Vite
+# AgriVision Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React application for the AgriVision platform.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Install dependencies:
+```bash
+npm install
+```
 
-## React Compiler
+2. Create a `.env` file based on `.env.example`:
+```bash
+cp .env.example .env
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+3. Add your Firebase configuration to `.env`
 
-## Expanding the ESLint configuration
+4. Start the development server:
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/       # Reusable UI components
+│   │   ├── auth/        # Authentication components
+│   │   ├── header/      # Header component
+│   │   └── landing/     # Landing page component
+│   ├── contexts/        # React contexts
+│   │   └── authcontext/ # Authentication context
+│   ├── firebase/        # Firebase configuration
+│   ├── pages/           # Page components
+│   ├── hooks/           # Custom React hooks
+│   ├── utils/           # Utility functions
+│   ├── api/             # API call functions
+│   └── assets/          # Images, icons, etc.
+├── public/              # Static assets
+├── .env                 # Environment variables (not in git)
+├── .env.example         # Environment variables template
+└── package.json         # Dependencies
+```
+
+## Environment Variables
+
+See `.env.example` for required environment variables. You need to set up:
+- Firebase API key
+- Firebase Auth Domain
+- Firebase Project ID
+- And other Firebase configuration
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Tech Stack
+
+- React 19
+- Vite
+- React Router DOM
+- Firebase Authentication
+- Tailwind CSS

@@ -1,7 +1,27 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/authcontext/Authcontext";
 
 const Landing = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { userLoggedIn } = useAuth();
+
+  const handleAuthClick = () => {
+    if (userLoggedIn) {
+      navigate('/home');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleDashboardClick = () => {
+    if (userLoggedIn) {
+      navigate('/home');
+    } else {
+      navigate('/register');
+    }
+  };
 
   return (
     <div className="antialiased text-gray-900 bg-neutral-900 w-screen min-h-screen overflow-x-hidden">
@@ -88,16 +108,22 @@ const Landing = () => {
               <span className="text-[#84cc16]">AI Precision</span>
             </h1>
             <p className="text-xl lg:text-2xl text-neutral-300 mb-8 leading-relaxed">
-              Harness multispectral imaging and sensor data to detect crop
+              Harness hyperspectral imaging and sensor data to detect crop
               stress, soil conditions, and pest risks before they impact your
               yield.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="px-8 py-4 bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold rounded-lg transition-colors">
-                Explore Earth Viewer
+              <button 
+                onClick={handleAuthClick}
+                className="px-8 py-4 bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              >
+                {userLoggedIn ? 'Go to Dashboard' : 'Login'}
               </button>
-              <button className="px-8 py-4 border-2 border-neutral-400 text-neutral-200 hover:bg-neutral-800 font-semibold rounded-lg transition-colors">
-                View Dashboard
+              <button 
+                onClick={handleDashboardClick}
+                className="px-8 py-4 border-2 border-neutral-400 text-neutral-200 hover:bg-neutral-800 font-semibold rounded-lg transition-colors"
+              >
+                {userLoggedIn ? 'View Dashboard' : 'Sign Up'}
               </button>
             </div>
           </div>
