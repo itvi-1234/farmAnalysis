@@ -550,6 +550,112 @@ export default function Alerts() {
   /* ----------------------------------------------------
      Delete Alert
   ---------------------------------------------------- */
+  /* ----------------------------------------------------
+     Send Alert via Agentic AI Webhook
+  ---------------------------------------------------- */
+  const sendAlertToAgenticAI = async (alert, showAlert = true) => {
+    try {
+      // Fetch user's name from Firestore
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      let userName = "Farmer";
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const firstName = userData.firstName || "";
+        const lastName = userData.lastName || "";
+        userName = `${firstName} ${lastName}`.trim() || userData.email?.split("@")[0] || "Farmer";
+      }
+
+      // Build the message from alert data
+      let message = `Alert: ${alert.title}\n`;
+      
+      if (alert.metrics) {
+        const metrics = alert.metrics;
+        message += `\n📊 Metrics:\n`;
+        message += `- NDVI: ${metrics.ndvi}\n`;
+        message += `- Soil Moisture: ${metrics.moisture}\n`;
+        message += `- Disease Risk: ${metrics.diseaseRisk}%\n`;
+        message += `- Pest Risk: ${metrics.pestRisk}%\n`;
+        message += `- Stress Index: ${metrics.stressIndex}%\n`;
+      }
+      
+      if (alert.actions && alert.actions.length > 0) {
+        message += `\n⚠️ Actions Required:\n`;
+        alert.actions.forEach((action, i) => {
+          message += `${i + 1}. ${action}\n`;
+        });
+      }
+
+      // Send to webhook with hardcoded phone and email
+      const response = await fetch(
+        "https://primary-production-569f.up.railway.app/webhook/a9d2af3a-197e-4127-9c42-4076bba6cf44",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            body: {
+              name: userName,
+              email: "omjain110305@gmail.com",
+              phone: "7355074001",
+              message: message,
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        console.log("✅ Alert sent successfully to Agentic AI");
+        if (showAlert) {
+          alert("✅ Alert sent successfully to phone number 7355074001!");
+        }
+        return true;
+      } else {
+        console.error("❌ Failed to send alert:", response.statusText);
+        if (showAlert) {
+          alert("❌ Failed to send alert. Please try again.");
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error sending alert to Agentic AI:", error);
+      if (showAlert) {
+        alert("❌ Error sending alert. Please check your connection and try again.");
+      }
+      return false;
+    }
+  };
+
+  /* ----------------------------------------------------
+     Send All Alerts for Current Period
+  ---------------------------------------------------- */
+  const sendAllAlerts = async () => {
+    if (currentAlerts.length === 0) {
+      alert("No alerts to send!");
+      return;
+    }
+
+    const confirmSend = window.confirm(
+      `Send ${currentAlerts.length} alert(s) to phone number 7355074001?`
+    );
+    
+    if (!confirmSend) return;
+
+    let successCount = 0;
+    for (const alertItem of currentAlerts) {
+      const success = await sendAlertToAgenticAI(alertItem, false);
+      if (success) successCount++;
+    }
+
+    if (successCount === currentAlerts.length) {
+      alert(`✅ Successfully sent all ${currentAlerts.length} alerts to phone number 7355074001!`);
+    } else {
+      alert(`⚠️ Sent ${successCount} out of ${currentAlerts.length} alerts. Some alerts failed to send.`);
+    }
+  };
+
   const deleteAlert = (id) => {
     setAlerts((prev) => {
       const next = { ...prev };
@@ -626,6 +732,16 @@ export default function Alerts() {
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Loading...' : 'Refresh'}
               </button>
+                
+                {/* Send Alerts Button */}
+                <button
+                  onClick={sendAllAlerts}
+                  disabled={loading || currentAlerts.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Bell className="h-4 w-4" />
+                  Send Alerts to Phone
+                </button>
               </div>
             )}
           </div>
@@ -963,6 +1079,13 @@ export default function Alerts() {
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-3 mt-6">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => sendAlertToAgenticAI(alert)}
+                        className="px-6 border-blue-500 text-blue-600 hover:bg-blue-50"
+                      >
+                        <Bell className="h-4 w-4" /> Send to Phone
+                      </Button>
                       <Button 
                         variant="destructive" 
                         onClick={() => deleteAlert(alert.id)}
