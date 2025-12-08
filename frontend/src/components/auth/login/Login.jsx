@@ -1,20 +1,37 @@
-import React, { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { doSignInWithEmailAndPassword, doSignInWithGoogle } from '../../../firebase/auth'
 import { useAuth } from '../../../contexts/authcontext/Authcontext'
-import { doc, setDoc, getFirestore } from 'firebase/firestore'
+import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import './Login.css'
 
 const Login = () => {
     const { userLoggedIn } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [isSigningIn, setIsSigningIn] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
     const [locationRequested, setLocationRequested] = useState(false)
+    const [userType, setUserType] = useState('')
+
+    // Get user type from sessionStorage or location state
+    useEffect(() => {
+        const typeFromStorage = sessionStorage.getItem('userType')
+        const typeFromState = location.state?.userType
+        setUserType(typeFromStorage || typeFromState || '')
+    }, [location])
+
+    useEffect(() => {
+        if (userType) {
+            sessionStorage.setItem('userType', userType)
+        } else {
+            sessionStorage.removeItem('userType')
+        }
+    }, [userType])
 
     const requestLocationPermission = async () => {
         return new Promise((resolve, reject) => {
@@ -30,12 +47,20 @@ const Login = () => {
                         const db = getFirestore()
                         const auth = getAuth()
                         const userRef = doc(db, 'users', auth.currentUser.uid)
+                        
+                        // Get existing user data
+                        const userSnap = await getDoc(userRef)
+                        const existingData = userSnap.exists() ? userSnap.data() : {}
+                        
                         await setDoc(userRef, {
+                            ...existingData,
                             location: {
                                 latitude,
                                 longitude,
                                 timestamp: new Date().toISOString()
-                            }
+                            },
+                            // Preserve userType if it exists, otherwise use from session
+                            userType: existingData.userType || userType || 'farmer'
                         }, { merge: true })
                         resolve({ latitude, longitude })
                     } catch (error) {
@@ -58,10 +83,25 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (!userType) {
+            setErrorMessage('Please select whether you are a farmer or a vendor.')
+            return
+        }
+
         if(!isSigningIn) {
             setIsSigningIn(true)
             try {
                 await doSignInWithEmailAndPassword(email, password)
+                
+                // Save user type to Firestore
+                const db = getFirestore()
+                const auth = getAuth()
+                if (auth.currentUser && userType) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid)
+                    await setDoc(userRef, {
+                        userType: userType
+                    }, { merge: true })
+                }
                 
                 // Request location permission after successful login
                 setTimeout(async () => {
@@ -84,9 +124,24 @@ const Login = () => {
 
     const onGoogleSignIn = (e) => {
         e.preventDefault()
+        if (!userType) {
+            setErrorMessage('Please select whether you are a farmer or a vendor.')
+            return
+        }
+
         if (!isSigningIn) {
             setIsSigningIn(true)
             doSignInWithGoogle().then(async () => {
+                // Save user type to Firestore
+                const db = getFirestore()
+                const auth = getAuth()
+                if (auth.currentUser && userType) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid)
+                    await setDoc(userRef, {
+                        userType: userType
+                    }, { merge: true })
+                }
+                
                 // Request location permission after successful Google login
                 setTimeout(async () => {
                     try {
@@ -127,6 +182,22 @@ const Login = () => {
             <div className="form-container" style={{ minHeight: "100vh" }}>
                 <form onSubmit={handleSubmit} className="auth-form">
                     <h4 className="title">Login to AgriVision</h4>
+
+                    <div className="mb-3">
+                        <select
+                            className="form-control role-select"
+                            value={userType}
+                            onChange={(e) => {
+                                setUserType(e.target.value)
+                                if (errorMessage) setErrorMessage('')
+                            }}
+                            required
+                        >
+                            <option value="" disabled>Select your role</option>
+                            <option value="farmer">👨‍🌾 Farmer</option>
+                            <option value="vendor">🏪 Vendor</option>
+                        </select>
+                    </div>
                     
                     <div className="mb-3">
                         <input

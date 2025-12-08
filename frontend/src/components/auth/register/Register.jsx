@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../../contexts/authcontext/Authcontext'
 import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from '../../../firebase/auth'
+import { doc, setDoc, getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 import './Register.css'
 
 const Register = () => {
@@ -10,9 +12,18 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isRegistering, setIsRegistering] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
+    const [userType, setUserType] = useState(null)
 
     const { userLoggedIn } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
+
+    // Get user type from sessionStorage or location state
+    useEffect(() => {
+        const typeFromStorage = sessionStorage.getItem('userType')
+        const typeFromState = location.state?.userType
+        setUserType(typeFromStorage || typeFromState || null)
+    }, [location])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -25,6 +36,19 @@ const Register = () => {
             }
             try {
                 await doCreateUserWithEmailAndPassword(email, password)
+                
+                // Save user type to Firestore
+                const db = getFirestore()
+                const auth = getAuth()
+                if (auth.currentUser && userType) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid)
+                    await setDoc(userRef, {
+                        email: email,
+                        userType: userType,
+                        createdAt: new Date().toISOString()
+                    }, { merge: true })
+                }
+                
                 // Navigation handled by Navigate component below
             } catch (error) {
                 setErrorMessage(error.message)
@@ -33,14 +57,28 @@ const Register = () => {
         }
     }
 
-    const onGoogleSignIn = (e) => {
+    const onGoogleSignIn = async (e) => {
         e.preventDefault()
         if (!isRegistering) {
             setIsRegistering(true)
-            doSignInWithGoogle().catch((error) => {
+            try {
+                await doSignInWithGoogle()
+                
+                // Save user type to Firestore
+                const db = getFirestore()
+                const auth = getAuth()
+                if (auth.currentUser && userType) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid)
+                    await setDoc(userRef, {
+                        email: auth.currentUser.email,
+                        userType: userType,
+                        createdAt: new Date().toISOString()
+                    }, { merge: true })
+                }
+            } catch (error) {
                 setErrorMessage(error.message)
                 setIsRegistering(false)
-            })
+            }
         }
     }
 
@@ -65,8 +103,25 @@ const Register = () => {
             </video>
 
             <div className="form-container" style={{ minHeight: "100vh" }}>
+                {!userType && (
+                    <div className="user-type-prompt">
+                        <p>Please select your role first</p>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate('/user-type')}
+                        >
+                            Select Role
+                        </button>
+                    </div>
+                )}
                 <form onSubmit={handleSubmit} className="auth-form">
                     <h4 className="title">Create Account</h4>
+                    {userType && (
+                        <p className="user-type-badge">
+                            {userType === 'farmer' ? '👨‍🌾 Farmer' : '🏪 Vendor'}
+                        </p>
+                    )}
                     
                     <div className="mb-3">
                         <input

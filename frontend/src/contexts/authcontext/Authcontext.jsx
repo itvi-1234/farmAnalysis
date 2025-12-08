@@ -17,7 +17,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, initializeUser);
+    if (!auth) {
+      console.error('Firebase Auth is not initialized. Please check your Firebase configuration.');
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      initializeUser,
+      (error) => {
+        console.error('Auth state change error:', error);
+        // Handle specific error codes
+        if (error.code === 'auth/api-key-not-valid') {
+          console.error('❌ Firebase API key is invalid. Please check your .env file.');
+        } else if (error.code === 'auth/network-request-failed') {
+          console.error('❌ Network error. Please check your internet connection.');
+        } else {
+          console.error('❌ Authentication error:', error.message);
+        }
+        setLoading(false);
+      }
+    );
     return unsubscribe;
   }, []);
 

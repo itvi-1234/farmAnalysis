@@ -16,7 +16,7 @@ import Sidebar from "../components/dashboard/Sidebar";
 import { doSignOut } from "../firebase/auth";
 
 import { db } from "../firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 
 /* -------------------------------------------------------
    Utility: cn()
@@ -146,6 +146,8 @@ export default function Alerts() {
   const [selectedType, setSelectedType] = useState("daily");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userType, setUserType] = useState(null);
+  const [chatAlerts, setChatAlerts] = useState([]);
 
   const handleLogout = async () => {
     try {
@@ -155,6 +157,31 @@ export default function Alerts() {
       console.error("Logout error:", error);
     }
   };
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      if (!currentUser) {
+        setUserType(null);
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setUserType(data.userType || "farmer");
+        } else {
+          setUserType("farmer");
+        }
+      } catch (err) {
+        console.error("Error fetching user type in Alerts:", err);
+        setUserType("farmer");
+      }
+    };
+
+    fetchUserType();
+  }, [currentUser]);
 
   /* ----------------------------------------------------
      2. LSTM API + convert into alert UI format (FULL)
@@ -330,8 +357,82 @@ export default function Alerts() {
   }, [currentUser, runLSTM]);
 
   useEffect(() => {
-    loadFieldData();
-  }, [loadFieldData]);
+    if (userType === "farmer") {
+      loadFieldData();
+    }
+  }, [loadFieldData, userType]);
+
+  useEffect(() => {
+    if (!currentUser || userType !== "vendor") {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const convQuery = query(
+      collection(db, "conversations"),
+      where("participants", "array-contains", currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      convQuery,
+      (snapshot) => {
+        const items = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() || {};
+          const participants = data.participants || [];
+          const names = data.participantNames || {};
+          const unreadFor = data.unreadFor || [];
+
+          // Only show conversations where the current vendor has unread messages
+          if (!unreadFor.includes(currentUser.uid)) {
+            return;
+          }
+
+          const otherId =
+            participants.find((id) => id !== currentUser.uid) || null;
+
+          if (!otherId) {
+            return;
+          }
+
+          const displayName = names[otherId] || "Farmer";
+
+          items.push({
+            id: docSnap.id,
+            farmerName: displayName,
+            lastMessage: data.lastMessageText || "",
+            lastSenderName: data.lastMessageSenderName || "",
+            updatedAt: data.updatedAt,
+            otherUserId: otherId,
+          });
+        });
+
+        items.sort((a, b) => {
+          const ta =
+            a.updatedAt && a.updatedAt.toMillis
+              ? a.updatedAt.toMillis()
+              : 0;
+          const tb =
+            b.updatedAt && b.updatedAt.toMillis
+              ? b.updatedAt.toMillis()
+              : 0;
+          return tb - ta;
+        });
+
+        setChatAlerts(items);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error loading vendor chat notifications:", err);
+        setError("Failed to load notifications");
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser, userType]);
 
   /* ----------------------------------------------------
      Delete Alert
@@ -347,6 +448,7 @@ export default function Alerts() {
   };
 
   const currentAlerts = useMemo(() => alerts[selectedType] ?? [], [alerts, selectedType]);
+  const isVendor = userType === "vendor";
 
   if (!userLoggedIn) return <Navigate to="/login" replace />;
 
@@ -365,23 +467,32 @@ export default function Alerts() {
                 <Bell className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Farm Alerts</h1>
-                <p className="text-sm text-muted-foreground">Smart alerts based on your farm's satellite data</p>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {isVendor ? "Vendor Notifications" : "Farm Alerts"}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {isVendor
+                    ? "Notifications when farmers contact you via chat"
+                    : "Smart alerts based on your farm's satellite data"}
+                </p>
               </div>
             </div>
             
             {/* Refresh Button */}
-            <button
-              onClick={loadFieldData}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
+            {!isVendor && (
+              <button
+                onClick={loadFieldData}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            )}
           </div>
 
           {/* Tabs */}
+          {!isVendor && (
           <Tabs value={selectedType} onValueChange={setSelectedType}>
             <TabsList value={selectedType} onValueChange={setSelectedType}>
               <TabsTrigger value="daily"><Clock11 className="h-4 w-4" /> Daily</TabsTrigger>
@@ -389,6 +500,7 @@ export default function Alerts() {
               <TabsTrigger value="biweekly"><Clock className="h-4 w-4" /> Biweekly</TabsTrigger>
             </TabsList>
           </Tabs>
+          )}
 
           {/* Loading State */}
           {loading && (
@@ -420,7 +532,7 @@ export default function Alerts() {
           )}
 
           {/* Alerts Grid */}
-          {!loading && !error && (
+          {!loading && !error && !isVendor && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {currentAlerts.map((alert) => {
               const conf = priorityConfig[alert.priority] || priorityConfig.medium;
@@ -479,13 +591,83 @@ export default function Alerts() {
           </div>
           )}
 
+          {!loading && !error && isVendor && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {chatAlerts.length === 0 ? (
+              <Card className="p-6 border-2 bg-card/70">
+                <div className="space-y-2">
+                  <p className="font-semibold">No new queries</p>
+                  <p className="text-sm text-muted-foreground">
+                    You don't have any unread messages from farmers.
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              chatAlerts.map((item) => (
+                <Card
+                  key={item.id}
+                  className="group p-6 border-2 hover:shadow-lg hover:scale-[1.02] transition-all"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 rounded-md bg-muted/40 p-1.5">
+                          <Bell className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">
+                            New query from {item.farmerName}
+                          </h3>
+                          {item.lastSenderName && (
+                            <p className="text-xs text-muted-foreground">
+                              Last message by {item.lastSenderName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="default" className="capitalize">
+                        Unread
+                      </Badge>
+                    </div>
+                    {item.lastMessage && (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {item.lastMessage}
+                      </p>
+                    )}
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => navigate(`/chat/${item.otherUserId}`)}
+                      >
+                        Open Chat
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+          )}
+
           {/* Summary */}
-          {!loading && !error && (
+          {!loading && !error && !isVendor && (
           <Card className="p-6 border-2 bg-card/70">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total alerts</p>
                 <p className="text-3xl font-bold">{currentAlerts.length}</p>
+              </div>
+            </div>
+          </Card>
+          )}
+
+          {!loading && !error && isVendor && (
+          <Card className="p-6 border-2 bg-card/70">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total unread queries</p>
+                <p className="text-3xl font-bold">{chatAlerts.length}</p>
               </div>
             </div>
           </Card>
