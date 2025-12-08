@@ -2,10 +2,21 @@ import React from "react";
 import Navbar from "../components/dashboard/Navbar";
 import Sidebar from "../components/dashboard/Sidebar";
 import { useAuth } from "../contexts/authcontext/Authcontext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { doSignOut } from "../firebase/auth";
 
 const Features = () => {
   const { currentUser, userLoggedIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await doSignOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (!userLoggedIn) return <Navigate to="/login" replace />;
 
@@ -14,7 +25,7 @@ const Features = () => {
 
 
       {/* NAV + SIDEBAR */}
-      <Navbar currentUser={currentUser} />
+      <Navbar currentUser={currentUser} onLogout={handleLogout} />
       <Sidebar />
 
       {/* MAIN CONTENT (SHIFTED LIKE FARM SELECTION) */}

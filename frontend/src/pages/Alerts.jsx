@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   AlertCircle,
   Clock,
@@ -6,11 +6,17 @@ import {
   Bell,
   Trash2,
   Clock11,
+  RefreshCw
 } from "lucide-react";
+
 import { useAuth } from "../contexts/authcontext/Authcontext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import Navbar from "../components/dashboard/Navbar";
 import Sidebar from "../components/dashboard/Sidebar";
+import { doSignOut } from "../firebase/auth";
+
+import { db } from "../firebase/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 /* -------------------------------------------------------
    Utility: cn()
@@ -20,7 +26,7 @@ function cn(...classes) {
 }
 
 /* -------------------------------------------------------
-   Card Component (local)
+   UI Components
 ------------------------------------------------------- */
 const Card = React.forwardRef(({ className, children, ...props }, ref) => (
   <div
@@ -36,35 +42,26 @@ const Card = React.forwardRef(({ className, children, ...props }, ref) => (
 ));
 Card.displayName = "Card";
 
-/* -------------------------------------------------------
-   Badge Component (local)
-   - variants: default | secondary | destructive | outline
-------------------------------------------------------- */
-function Badge({ variant = "default", className, children, ...props }) {
+function Badge({ variant = "default", className, children }) {
   const variants = {
     default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
     secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
     outline: "bg-transparent border text-foreground",
   };
-
   return (
     <div
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-        variants[variant] ?? variants.default,
+        variants[variant],
         className
       )}
-      {...props}
     >
       {children}
     </div>
   );
 }
 
-/* -------------------------------------------------------
-   Button Component (local)
-------------------------------------------------------- */
 const Button = React.forwardRef(({ variant = "default", size = "default", className, children, ...props }, ref) => {
   const variants = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -76,14 +73,13 @@ const Button = React.forwardRef(({ variant = "default", size = "default", classN
     default: "h-10 px-4 py-2",
     sm: "h-9 px-3 text-sm",
   };
-
   return (
     <button
       ref={ref}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all",
-        variants[variant] ?? variants.default,
-        sizes[size] ?? sizes.default,
+        variants[variant],
+        sizes[size],
         className
       )}
       {...props}
@@ -95,7 +91,7 @@ const Button = React.forwardRef(({ variant = "default", size = "default", classN
 Button.displayName = "Button";
 
 /* -------------------------------------------------------
-   Tabs (fixed, working)
+   Tabs
 ------------------------------------------------------- */
 function Tabs({ value, onValueChange, children }) {
   return <div>{React.Children.map(children, (child) => React.cloneElement(child, { value, onValueChange }))}</div>;
@@ -125,126 +121,171 @@ function TabsTrigger({ value: triggerValue, selectedValue, onValueChange, childr
 }
 
 /* -------------------------------------------------------
-   Priority config (explicit classes)
+   PRIORITY CONFIG
 ------------------------------------------------------- */
 const priorityConfig = {
   high: { badgeVariant: "destructive", icon: AlertCircle, iconClass: "text-destructive" },
-  medium: { badgeVariant: "default", icon: Clock, iconClass: "text-warning" },
-  low: { badgeVariant: "secondary", icon: CheckCircle2, iconClass: "text-success" },
+  medium: { badgeVariant: "default", icon: Clock, iconClass: "text-yellow-600" },
+  low: { badgeVariant: "secondary", icon: CheckCircle2, iconClass: "text-green-600" },
 };
 
-/* -------------------------------------------------------
-   Main Component
-   - details visible directly
-   - delete per-notification
-   - dynamic (simulated fetch)
-------------------------------------------------------- */
+/* =======================================================
+   MAIN: Alerts (UI + LSTM integration)
+   ======================================================= */
 export default function Alerts() {
   const { currentUser, userLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
-  // alerts stored by type (dynamic)
+  // 🔥 Real alerts will be stored here
   const [alerts, setAlerts] = useState({
     daily: [],
     weekly: [],
     biweekly: [],
   });
 
-  // selected tab
   const [selectedType, setSelectedType] = useState("daily");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // load simulated data (replace with real fetch)
-  useEffect(() => {
-    // simulate API fetch
-    const timer = setTimeout(() => {
-      setAlerts({
+  const handleLogout = async () => {
+    try {
+      await doSignOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  /* ----------------------------------------------------
+     2. LSTM API + convert into alert UI format
+  ---------------------------------------------------- */
+  const API_URL = "https://itvi-1234-lstm.hf.space/predict";
+
+  const runLSTM = useCallback(async (latVal, lonVal) => {
+    console.log("🌾 Running LSTM with coordinates:", latVal, lonVal);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const resp = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat: latVal, lon: lonVal }),
+      });
+
+      console.log("📡 LSTM API Response status:", resp.status);
+      const result = await resp.json();
+      console.log("📊 LSTM API Result:", result);
+      
+      if (!result.success) {
+        setError("LSTM API returned unsuccessful response");
+        setLoading(false);
+        return;
+      }
+
+      const data = result.data;
+
+      // 🔥 Map LSTM output → Your alert card UI structure
+      const newAlerts = {
         daily: [
           {
-            id: "d1",
-            title: "System Backup Pending",
-            description: "Daily system backup has not been completed. Critical data may be at risk.",
-            priority: "high",
-            actions: ["Run backup now", "Check backup logs", "Verify storage space"],
-            timestamp: "2 hours ago",
+            id: "d_ndvi",
+            title: "NDVI Status",
+            description: `NDVI = ${data.current_status.ndvi}. Vegetation status checked.`,
+            priority: data.current_status.ndvi < 0.3 ? "high" : "medium",
+            actions: ["Monitor crop health", "Check irrigation", "Inspect leaf color"],
+            timestamp: "Now",
           },
           {
-            id: "d2",
-            title: "User Activity Spike",
-            description: "Unusual increase in user activity detected in the last 24 hours.",
-            priority: "medium",
-            actions: ["Review analytics", "Check server capacity", "Monitor performance"],
-            timestamp: "5 hours ago",
-          },
-          {
-            id: "d3",
-            title: "Certificate Expiring Soon",
-            description: "SSL certificate will expire in 7 days. Renewal required to maintain security.",
-            priority: "medium",
-            actions: ["Renew certificate", "Update DNS records", "Test new certificate"],
-            timestamp: "8 hours ago",
+            id: "d_moisture",
+            title: "Soil Moisture Update",
+            description: `Moisture = ${data.current_status.sm}`,
+            priority: data.current_status.sm < 0.2 ? "high" : "medium",
+            actions: ["Improve irrigation", "Check soil condition"],
+            timestamp: "Now",
           },
         ],
+
         weekly: [
           {
-            id: "w1",
-            title: "Performance Report Available",
-            description: "Weekly performance metrics are ready for review. Overall system health is good.",
-            priority: "low",
-            actions: ["View full report", "Compare with last week", "Share with team"],
-            timestamp: "1 day ago",
-          },
-          {
-            id: "w2",
-            title: "Security Patch Required",
-            description: "New security updates available for critical system components.",
-            priority: "high",
-            actions: ["Review patch notes", "Schedule maintenance", "Apply updates"],
-            timestamp: "2 days ago",
-          },
-          {
-            id: "w3",
-            title: "Database Cleanup Recommended",
-            description: "Database has accumulated temporary data. Cleanup will improve performance.",
-            priority: "medium",
-            actions: ["Analyze database size", "Schedule cleanup", "Create backup first"],
-            timestamp: "3 days ago",
+            id: "w_disease",
+            title: "Disease Risk Forecast",
+            description: `Disease risk = ${data.forecast.day_7.disease_risk}%`,
+            priority: data.forecast.day_7.disease_risk > 60 ? "high" : "medium",
+            actions: ["Spray recommended fungicide", "Remove infected leaves"],
+            timestamp: "Weekly Prediction",
           },
         ],
+
         biweekly: [
           {
-            id: "b1",
-            title: "Subscription Renewal Due",
-            description: "Multiple service subscriptions require renewal in the next billing cycle.",
-            priority: "high",
-            actions: ["Review subscriptions", "Update payment method", "Confirm renewals"],
-            timestamp: "5 days ago",
-          },
-          {
-            id: "b2",
-            title: "Team Access Review",
-            description: "Biweekly security audit: Review and update team member access permissions.",
-            priority: "medium",
-            actions: ["Audit user roles", "Remove inactive accounts", "Update permissions"],
-            timestamp: "1 week ago",
-          },
-          {
-            id: "b3",
-            title: "Compliance Report Needed",
-            description: "Biweekly compliance documentation is due for regulatory requirements.",
-            priority: "low",
-            actions: ["Generate report", "Review compliance checklist", "Submit documentation"],
-            timestamp: "10 days ago",
+            id: "b_pest",
+            title: "Pest Risk (14 days)",
+            description: `Pest risk = ${data.forecast.day_14.pest_risk}%`,
+            priority: data.forecast.day_14.pest_risk > 60 ? "high" : "medium",
+            actions: ["Use pest traps", "Spray appropriate insecticide"],
+            timestamp: "Biweekly Forecast",
           },
         ],
-      });
-    }, 300);
+      };
 
-    return () => clearTimeout(timer);
+      setAlerts(newAlerts);
+      console.log("✅ Alerts updated successfully");
+      setLoading(false);
+    } catch (err) {
+      console.error("❌ LSTM Fetch Error:", err);
+      setError(err.message || "Failed to fetch alerts");
+      setLoading(false);
+    }
   }, []);
 
-  // derived current alerts
-  const currentAlerts = useMemo(() => alerts[selectedType] ?? [], [alerts, selectedType]);
+  /* ----------------------------------------------------
+     1. Load Coordinates from Firebase
+  ---------------------------------------------------- */
+  const loadFieldData = useCallback(async () => {
+    if (!currentUser) {
+      console.log("⚠️ No current user");
+      return;
+    }
 
-  // delete a notification by id (search across all types to be safe)
+    console.log("🔍 Loading field data for user:", currentUser.uid);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const ref = doc(db, "fields", currentUser.uid);
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        console.log("📍 Field data found:", data);
+
+        if (data.lat && data.lng) {
+          // auto-run prediction
+          await runLSTM(data.lat, data.lng);
+        } else {
+          setError("Field coordinates not found. Please add field details first.");
+          setLoading(false);
+        }
+      } else {
+        console.log("⚠️ No field data found");
+        setError("No field data found. Please add your field details first.");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("❌ Error loading field data:", err);
+      setError("Failed to load field data");
+      setLoading(false);
+    }
+  }, [currentUser, runLSTM]);
+
+  useEffect(() => {
+    loadFieldData();
+  }, [loadFieldData]);
+
+  /* ----------------------------------------------------
+     Delete Alert
+  ---------------------------------------------------- */
   const deleteAlert = (id) => {
     setAlerts((prev) => {
       const next = { ...prev };
@@ -255,100 +296,111 @@ export default function Alerts() {
     });
   };
 
-  // optionally, function to append fetched items (dynamic support)
-  const addAlertsForType = (type, newAlerts) => {
-    setAlerts((prev) => ({
-      ...prev,
-      [type]: [...(prev[type] ?? []), ...newAlerts],
-    }));
-  };
+  const currentAlerts = useMemo(() => alerts[selectedType] ?? [], [alerts, selectedType]);
 
   if (!userLoggedIn) return <Navigate to="/login" replace />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
-      <Navbar currentUser={currentUser} />
+      <Navbar currentUser={currentUser} onLogout={handleLogout} />
       <Sidebar />
 
       <main className="pt-20 lg:ml-64 px-6 md:px-8">
         <div className="mx-auto max-w-6xl space-y-6 py-6">
+          
           {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <Bell className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
+                <Bell className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Farm Alerts</h1>
+                <p className="text-sm text-muted-foreground">Smart alerts based on your farm's satellite data</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Alert Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Monitor and manage your system alerts</p>
-            </div>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={loadFieldData}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
           </div>
 
           {/* Tabs */}
-          <div>
-            <Tabs value={selectedType} onValueChange={setSelectedType}>
-              <TabsList value={selectedType} onValueChange={setSelectedType}>
-                <TabsTrigger value="daily">
-                  <Clock11 className="h-4 w-4" /> <span>Daily</span>
-                </TabsTrigger>
-                <TabsTrigger value="weekly">
-                  <Clock className="h-4 w-4" /> <span>Weekly</span>
-                </TabsTrigger>
-                <TabsTrigger value="biweekly">
-                  <Clock className="h-4 w-4" /> <span>Biweekly</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          <Tabs value={selectedType} onValueChange={setSelectedType}>
+            <TabsList value={selectedType} onValueChange={setSelectedType}>
+              <TabsTrigger value="daily"><Clock11 className="h-4 w-4" /> Daily</TabsTrigger>
+              <TabsTrigger value="weekly"><Clock className="h-4 w-4" /> Weekly</TabsTrigger>
+              <TabsTrigger value="biweekly"><Clock className="h-4 w-4" /> Biweekly</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Loading State */}
+          {loading && (
+            <Card className="p-8 text-center border-2">
+              <div className="flex flex-col items-center gap-3">
+                <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
+                <p className="text-gray-600">Loading alerts from satellite data...</p>
+              </div>
+            </Card>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <Card className="p-6 border-2 border-red-200 bg-red-50">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-red-900">Error Loading Alerts</h3>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <button
+                    onClick={loadFieldData}
+                    className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* Alerts Grid */}
+          {!loading && !error && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {currentAlerts.length === 0 ? (
-              <div className="col-span-full">
-                <Card className="p-6 text-center">
-                  <p className="text-muted-foreground">No alerts for {selectedType}.</p>
-                </Card>
-              </div>
-            ) : null}
-
-            {currentAlerts.map((alert, idx) => {
-              const conf = priorityConfig[alert.priority] ?? priorityConfig.medium;
+            {currentAlerts.map((alert) => {
+              const conf = priorityConfig[alert.priority];
               const Icon = conf.icon;
 
               return (
-                <Card
-                  key={alert.id}
-                  className="group p-6 border-2 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                  style={{ animationDelay: `${idx * 60}ms` }}
-                >
-                  {/* decorative circle */}
-                  <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/5 transition-all duration-300 group-hover:scale-125 pointer-events-none" />
-
+                <Card key={alert.id} className="group p-6 border-2 hover:shadow-lg hover:scale-[1.02] transition-all">
                   <div className="relative space-y-4">
+
                     {/* Header */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 rounded-md bg-muted/40 p-1.5 flex items-center justify-center">
+                        <div className="mt-0.5 rounded-md bg-muted/40 p-1.5">
                           <Icon className={cn("h-5 w-5", conf.iconClass)} />
                         </div>
-
                         <div>
-                          <h3 className="font-semibold text-foreground leading-tight">{alert.title}</h3>
-                          <p className="mt-1 text-xs text-muted-foreground">{alert.timestamp}</p>
+                          <h3 className="font-semibold">{alert.title}</h3>
+                          <p className="text-xs text-muted-foreground">{alert.timestamp}</p>
                         </div>
                       </div>
-
-                      <Badge variant={conf.badgeVariant} className="capitalize shrink-0">
-                        {alert.priority}
-                      </Badge>
+                      <Badge variant={conf.badgeVariant} className="capitalize">{alert.priority}</Badge>
                     </div>
 
                     {/* Description */}
-                    <p className="text-sm text-muted-foreground leading-relaxed">{alert.description}</p>
+                    <p className="text-sm text-muted-foreground">{alert.description}</p>
 
-                    {/* Details (VISIBLE DIRECTLY) */}
+                    {/* Action List */}
                     <div className="space-y-2 pt-2 border-t">
-                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Required Actions</p>
-                      <ul className="space-y-1.5 mt-2">
+                      <p className="text-xs font-semibold uppercase">Actions</p>
+                      <ul className="space-y-1.5">
                         {alert.actions.map((a, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
                             <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
@@ -358,51 +410,33 @@ export default function Alerts() {
                       </ul>
                     </div>
 
-                    {/* Buttons Row */}
+                    {/* Buttons */}
                     <div className="flex gap-3 pt-3">
-                      <Button variant="outline" className="flex-1">
-                        View Details
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        className="flex items-center gap-2"
-                        onClick={() => deleteAlert(alert.id)}
-                        aria-label={`Delete alert ${alert.title}`}
-                      >
+                      <Button variant="outline" className="flex-1">View Details</Button>
+                      <Button variant="destructive" onClick={() => deleteAlert(alert.id)}>
                         <Trash2 className="h-4 w-4" /> Delete
                       </Button>
                     </div>
+
                   </div>
                 </Card>
               );
             })}
           </div>
+          )}
 
-          {/* Summary Card */}
+          {/* Summary */}
+          {!loading && !error && (
           <Card className="p-6 border-2 bg-card/70">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total {selectedType} alerts</p>
-                <p className="text-3xl font-bold text-foreground">{currentAlerts.length}</p>
-              </div>
-
-              <div className="flex gap-6">
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">High Priority</p>
-                  <p className="text-xl font-semibold text-destructive">{currentAlerts.filter(a => a.priority === "high").length}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Medium</p>
-                  <p className="text-xl font-semibold text-warning">{currentAlerts.filter(a => a.priority === "medium").length}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Low</p>
-                  <p className="text-xl font-semibold text-success">{currentAlerts.filter(a => a.priority === "low").length}</p>
-                </div>
+                <p className="text-sm text-muted-foreground">Total alerts</p>
+                <p className="text-3xl font-bold">{currentAlerts.length}</p>
               </div>
             </div>
           </Card>
+          )}
+
         </div>
       </main>
     </div>

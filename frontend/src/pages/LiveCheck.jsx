@@ -2,16 +2,27 @@ import React, { useState } from "react";
 import Navbar from "../components/dashboard/Navbar";
 import Sidebar from "../components/dashboard/Sidebar";
 import { useAuth } from "../contexts/authcontext/Authcontext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { doSignOut } from "../firebase/auth";
 
 export default function LiveCheck() {
   const { currentUser, userLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+
+  const handleLogout = async () => {
+    try {
+      await doSignOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (!userLoggedIn) return <Navigate to="/login" replace />;
 
@@ -52,7 +63,7 @@ export default function LiveCheck() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
-      <Navbar currentUser={currentUser} />
+      <Navbar currentUser={currentUser} onLogout={handleLogout} />
       <Sidebar />
 
       <div className="pt-28 lg:ml-64 px-8">  {/* increased top padding */}

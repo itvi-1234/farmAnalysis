@@ -2,19 +2,30 @@ import React, { useState } from "react";
 import Navbar from "../components/dashboard/Navbar";
 import Sidebar from "../components/dashboard/Sidebar";
 import { useAuth } from "../contexts/authcontext/Authcontext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { doSignOut } from "../firebase/auth";
 import NewFieldMap from "../components/dashboard/NewFieldMap";
 
 const FarmSelection = () => {
   const { currentUser, userLoggedIn } = useAuth();
+  const navigate = useNavigate();
   const [showDrawer, setShowDrawer] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await doSignOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   if (!userLoggedIn) return <Navigate to="/login" replace />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
     
-    <Navbar currentUser={currentUser} />
+    <Navbar currentUser={currentUser} onLogout={handleLogout} />
     <Sidebar />
 
     <div className="pt-20 lg:ml-64 px-8">

@@ -27,7 +27,7 @@ const Sidebar = () => {
     { icon: BarChart3, name: "Analytics", href: "#" },
     { icon: Bell, name: "Alerts", href: "/alerts" },
     { icon: FileText, name: "Reports", href: "#" },
-    // { icon: HeadphonesIcon, name: "Support", href: "#" },
+    { icon: HeadphonesIcon, name: "Support", href: "#" },
     // { icon: DollarSign, name: "Pricing", href: "#" },
     { icon: User, name: "Account", href: "/profile" },
   ];

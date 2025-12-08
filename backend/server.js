@@ -5,7 +5,7 @@ import authRoutes from './src/routes/auth.js';
 import userRoutes from './src/routes/user.js';
 import predictRoutes from './src/routes/predict.js';
 import pestRoutes from './src/routes/pest.js';
-
+import fieldRoutes from "./src/routes/field.js";
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/disease', predictRoutes);
 app.use('/api/pest', pestRoutes);
-
+app.use("/field", fieldRoutes);
 
 // Health check
 app.get('/', (req, res) => {
