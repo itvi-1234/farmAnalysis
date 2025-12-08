@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './src/routes/auth.js';
 import userRoutes from './src/routes/user.js';
+import predictRoutes from './src/routes/predict.js';
+import pestRoutes from './src/routes/pest.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/disease', predictRoutes);
+app.use('/api/pest', pestRoutes);
+
 
 // Health check
 app.get('/', (req, res) => {

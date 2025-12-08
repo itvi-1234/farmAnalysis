@@ -8,6 +8,9 @@ import Profile from './pages/Profile'
 import Header from './components/header/Header'
 import FarmSelection from "./pages/FarmSelection";
 import Features from "./pages/Features";
+import Alerts from "./pages/Alerts";
+import LiveCheck from './pages/LiveCheck'
+import PestScanner from './pages/PestScanner'
 import './App.css'
 
 
@@ -27,7 +30,9 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/farm-selection" element={<FarmSelection />} />
           <Route path="/features" element={<Features />} />
-
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/disease-detection" element={<LiveCheck/>}/>
+          <Route path="/pest-scanner" element={<PestScanner/>}/>
 
           {/* Catch all - redirect to landing page */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -15,7 +15,7 @@ const NewFieldMap = ({ showDrawer, setShowDrawer }) => {
           </div>
         </div>
 
-        <div className="relative h-[550px] bg-gray-100">
+        <div className="relative h-[620px] bg-gray-100">
           <img
             src="https://upload.wikimedia.org/wikipedia/en/8/80/Wikipedia-logo-v2.svg"
             alt="map"
