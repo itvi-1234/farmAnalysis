@@ -255,7 +255,15 @@ export default function Alerts() {
         timestamp: Date.now(),
         fieldId: fieldId,
       };
-      localStorage.setItem(getCacheKey(fieldId), JSON.stringify(cacheData));
+      const cacheKey = getCacheKey(fieldId);
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      
+      // Dispatch custom event to notify dashboard
+      window.dispatchEvent(new CustomEvent('alertsUpdated', {
+        detail: { fieldId, cacheKey }
+      }));
+      
+      console.log("✅ Alerts saved to cache and event dispatched:", cacheKey);
     } catch (err) {
       console.error("Error saving alerts to cache:", err);
     }

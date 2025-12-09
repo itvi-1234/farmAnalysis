@@ -59,7 +59,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
     fetchWeather();
   }, [selectedField]);
 
-  // Load alerts count from cache (same as Alerts page)
+  // Load alerts count from cache and sync with Alerts page
   useEffect(() => {
     const loadAlertsFromCache = () => {
       if (!selectedField || !currentUser) {
@@ -79,7 +79,8 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           let total = 0;
           let highPriority = 0;
           
-          Object.keys(alerts).forEach(period => {
+          // Check all periods: daily, weekly, biweekly
+          ['daily', 'weekly', 'biweekly'].forEach(period => {
             if (alerts[period] && Array.isArray(alerts[period])) {
               alerts[period].forEach(alert => {
                 total += 1;
@@ -91,23 +92,97 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           });
           
           setAlertsData({ total, highPriority });
-          console.log("✅ Loaded alerts from cache:", { total, highPriority });
+          console.log("✅ Loaded alerts from cache:", { total, highPriority, alerts });
         } else {
-          setAlertsData({ total: 0, highPriority: 0 });
-          console.log("⚠️ No alerts cache found for field:", selectedField.id);
+          // If no cache, try to fetch alerts directly
+          console.log("⚠️ No alerts cache found, fetching alerts directly...");
+          fetchAlertsDirectly();
         }
       } catch (err) {
         console.error("❌ Error loading alerts from cache:", err);
+        fetchAlertsDirectly();
+      }
+    };
+
+    const fetchAlertsDirectly = async () => {
+      if (!selectedField || !selectedField.lat || !selectedField.lng) {
+        setAlertsData({ total: 0, highPriority: 0 });
+        return;
+      }
+
+      try {
+        const response = await fetch("https://itvi-1234-lstmnew.hf.space/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: selectedField.lat,
+            lon: selectedField.lng
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result && result.success) {
+            const data = result.data || {};
+            const forecast = data.forecast || {};
+            
+            let total = 0;
+            let highPriority = 0;
+            
+            // Count alerts from all periods
+            ['day_1', 'day_7', 'day_14'].forEach(period => {
+              if (forecast[period]) {
+                total += 1;
+                const periodData = forecast[period];
+                const disease = periodData.disease_risk ?? 0;
+                const pest = periodData.pest_risk ?? 0;
+                const stressIndex = data.stress_index ?? 0;
+                
+                if (Number(disease) > 60 || Number(pest) > 60 || Number(stressIndex) > 60) {
+                  highPriority += 1;
+                }
+              }
+            });
+            
+            setAlertsData({ total, highPriority });
+            console.log("✅ Fetched alerts directly:", { total, highPriority });
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error fetching alerts directly:", err);
         setAlertsData({ total: 0, highPriority: 0 });
       }
     };
 
     loadAlertsFromCache();
     
-    // Re-check cache every 5 seconds to stay in sync with Alerts page
-    const interval = setInterval(loadAlertsFromCache, 5000);
+    // Listen to storage events (when Alerts page updates cache in another tab)
+    const handleStorageChange = (e) => {
+      if (e.key && e.key.startsWith(`alerts_cache_${currentUser?.uid}_${selectedField?.id}`)) {
+        console.log("📢 Storage event detected, reloading alerts...");
+        loadAlertsFromCache();
+      }
+    };
     
-    return () => clearInterval(interval);
+    // Listen to custom events (when Alerts page updates cache in same tab)
+    const handleAlertsUpdated = (e) => {
+      if (e.detail && e.detail.fieldId === selectedField?.id) {
+        console.log("📢 Custom alertsUpdated event detected, reloading alerts...");
+        loadAlertsFromCache();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('alertsUpdated', handleAlertsUpdated);
+    
+    // Re-check cache every 2 seconds to stay in sync
+    const interval = setInterval(loadAlertsFromCache, 2000);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('alertsUpdated', handleAlertsUpdated);
+    };
   }, [selectedField, currentUser]);
 
   // Fetch LSTM data for disease risk calculation
