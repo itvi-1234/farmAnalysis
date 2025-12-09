@@ -1,3 +1,5 @@
+import { generateAllDescriptions, generateMetricDescription } from '../services/description.js';
+
 export const generateAIResponse = async (req, res) => {
   try {
     const { message } = req.body;
@@ -84,5 +86,39 @@ Based on the above instructions, give a clear, step-by-step answer in simple Eng
   } catch (error) {
     console.error('AI Controller Error:', error);
     res.status(500).json({ error: 'Failed to generate AI response' });
+  }
+};
+
+/**
+ * Generate descriptions for alert metrics based on ML model outputs
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const generateAlertDescriptions = async (req, res) => {
+  try {
+    const { metrics, advisoryActions } = req.body;
+    
+    if (!metrics) {
+      return res.status(400).json({ error: 'Metrics are required' });
+    }
+
+    console.log('Generating descriptions for metrics:', metrics);
+    
+    // Add advisory actions to metrics if provided
+    const metricsWithAdvisory = {
+      ...metrics,
+      advisoryActions: advisoryActions || []
+    };
+    
+    // Generate descriptions for all metrics
+    const descriptions = await generateAllDescriptions(metricsWithAdvisory);
+    
+    res.json({ 
+      success: true,
+      descriptions 
+    });
+  } catch (error) {
+    console.error('Error generating alert descriptions:', error);
+    res.status(500).json({ error: 'Failed to generate descriptions' });
   }
 };

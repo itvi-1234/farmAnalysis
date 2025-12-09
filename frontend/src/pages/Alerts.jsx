@@ -163,6 +163,10 @@ export default function Alerts() {
   const [selectedField, setSelectedField] = useState(null);
   const [fieldsLoading, setFieldsLoading] = useState(true);
   const [lastLoadedFieldId, setLastLoadedFieldId] = useState(null);
+  
+  // Descriptions for metrics
+  const [descriptions, setDescriptions] = useState({});
+  const [loadingDescriptions, setLoadingDescriptions] = useState({});
 
   const handleLogout = async () => {
     try {
@@ -355,6 +359,58 @@ export default function Alerts() {
     };
   };
 
+  // Fetch descriptions for alert metrics
+  const fetchDescriptions = async (alertId, metrics, advisoryActions = [], fieldId = null) => {
+    try {
+      // Create unique key that includes field ID to prevent conflicts between fields
+      const descriptionKey = fieldId ? `${fieldId}_${alertId}` : alertId;
+      
+      setLoadingDescriptions(prev => ({ ...prev, [descriptionKey]: true }));
+      
+      console.log('Fetching descriptions for alert:', alertId, 'Field:', fieldId, metrics);
+      
+      const response = await fetch('http://localhost:5000/api/ai/alert-descriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          metrics,
+          advisoryActions: advisoryActions || []
+        }),
+      });
+
+      const data = await response.json();
+      console.log('Description API response:', data);
+      
+      if (response.ok && data.success && data.descriptions) {
+        console.log('Setting descriptions for alert:', descriptionKey, data.descriptions);
+        setDescriptions(prev => ({
+          ...prev,
+          [descriptionKey]: data.descriptions
+        }));
+      } else {
+        console.error('Failed to fetch descriptions:', data);
+        // Set empty descriptions to avoid loading state
+        setDescriptions(prev => ({
+          ...prev,
+          [descriptionKey]: {}
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching descriptions:', error);
+      // Set empty descriptions on error
+      const descriptionKey = fieldId ? `${fieldId}_${alertId}` : alertId;
+      setDescriptions(prev => ({
+        ...prev,
+        [descriptionKey]: {}
+      }));
+    } finally {
+      const descriptionKey = fieldId ? `${fieldId}_${alertId}` : alertId;
+      setLoadingDescriptions(prev => ({ ...prev, [descriptionKey]: false }));
+    }
+  };
+
   const runLSTM = useCallback(async (latVal, lonVal) => {
     console.log("Running LSTM with coordinates:", latVal, lonVal);
     setLoading(true);
@@ -422,6 +478,14 @@ export default function Alerts() {
         saveAlertsToCache(selectedField.id, newAlerts);
       }
       
+      // Fetch descriptions for all alerts (include field ID to prevent conflicts)
+      const fieldId = selectedField?.id || null;
+      Object.values(newAlerts).flat().forEach(alert => {
+        if (alert.metrics) {
+          fetchDescriptions(alert.id, alert.metrics, alert.actions || [], fieldId);
+        }
+      });
+      
       console.log("Alerts updated successfully");
       setLoading(false);
     } catch (err) {
@@ -451,6 +515,14 @@ export default function Alerts() {
         setAlerts(cachedAlerts);
         setLastLoadedFieldId(selectedField.id);
         setError(null);
+        
+        // Fetch descriptions for cached alerts too (with field ID)
+        const fieldId = selectedField.id;
+        Object.values(cachedAlerts).flat().forEach(alert => {
+          if (alert.metrics) {
+            fetchDescriptions(alert.id, alert.metrics, alert.actions || [], fieldId);
+          }
+        });
         return;
       }
     }
@@ -478,6 +550,9 @@ export default function Alerts() {
     if (userType === "farmer" && selectedField && !fieldsLoading) {
       // Only load if field changed or we haven't loaded this field yet
       if (selectedField.id !== lastLoadedFieldId) {
+        // Clear descriptions when field changes to prevent showing wrong descriptions
+        setDescriptions({});
+        setLoadingDescriptions({});
         loadFieldData();
       }
     }
@@ -969,7 +1044,7 @@ export default function Alerts() {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
                       {/* NDVI Metric */}
                       <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:scale-105 hover:shadow-md",
+                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
                         ndviStatus.border,
                         "shadow-md"
                       )}>
@@ -982,12 +1057,34 @@ export default function Alerts() {
                             ? "-" 
                             : (isNaN(parseFloat(metrics.ndvi)) ? "-" : parseFloat(metrics.ndvi).toFixed(2))}
                         </p>
-                        <p className="text-xs text-gray-500">Vegetation</p>
+                        <p className="text-xs text-gray-500 mb-2">Vegetation</p>
+                        <div className="mt-auto pt-2 border-t border-gray-200">
+                          {(() => {
+                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                            return descriptions[descKey]?.ndvi ? (
+                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                {descriptions[descKey].ndvi}
+                              </p>
+                            ) : loadingDescriptions[descKey] ? (
+                              <p className="text-xs text-gray-400 italic">Generating description...</p>
+                            ) : (
+                            <p className="text-xs text-gray-600 italic">
+                              {(() => {
+                                const ndvi = parseFloat(metrics.ndvi) || 0;
+                                if (ndvi >= 0.7) return 'Excellent crop health. Vegetation is very healthy.';
+                                if (ndvi >= 0.4) return 'Good crop health. Monitor regularly.';
+                                if (ndvi >= 0.2) return 'Moderate health. Some areas need attention.';
+                                return 'Poor health. Action may be required.';
+                              })()}
+                            </p>
+                          );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Moisture Metric */}
                       <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:scale-105 hover:shadow-md",
+                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
                         moistureStatus.border,
                         "shadow-md"
                       )}>
@@ -1000,12 +1097,33 @@ export default function Alerts() {
                             ? "-" 
                             : (isNaN(parseFloat(metrics.moisture)) ? "-" : parseFloat(metrics.moisture).toFixed(2))}
                         </p>
-                        <p className="text-xs text-gray-500">Soil</p>
+                        <p className="text-xs text-gray-500 mb-2">Soil</p>
+                        <div className="mt-auto pt-2 border-t border-gray-200">
+                          {(() => {
+                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                            return descriptions[descKey]?.moisture ? (
+                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                {descriptions[descKey].moisture}
+                              </p>
+                            ) : loadingDescriptions[descKey] ? (
+                              <p className="text-xs text-gray-400 italic">Generating description...</p>
+                            ) : (
+                            <p className="text-xs text-gray-600 italic">
+                              {(() => {
+                                const moisture = parseFloat(metrics.moisture) || 0;
+                                if (moisture >= 60) return 'Adequate moisture. Irrigation may not be needed.';
+                                if (moisture >= 40) return 'Moderate moisture. Monitor and irrigate if needed.';
+                                return 'Soil is dry. Irrigation recommended.';
+                              })()}
+                            </p>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Disease Risk Metric */}
                       <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:scale-105 hover:shadow-md",
+                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
                         diseaseStatus.border,
                         "shadow-md"
                       )}>
@@ -1016,12 +1134,33 @@ export default function Alerts() {
                         <p className={cn("text-2xl font-bold mb-1", diseaseStatus.color)}>
                           {metrics.diseaseRisk}%
                         </p>
-                        <p className="text-xs text-gray-500">Risk</p>
+                        <p className="text-xs text-gray-500 mb-2">Risk</p>
+                        <div className="mt-auto pt-2 border-t border-gray-200">
+                          {(() => {
+                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                            return descriptions[descKey]?.diseaseRisk ? (
+                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                {descriptions[descKey].diseaseRisk}
+                              </p>
+                            ) : loadingDescriptions[descKey] ? (
+                              <p className="text-xs text-gray-400 italic">Generating description...</p>
+                            ) : (
+                            <p className="text-xs text-gray-600 italic">
+                              {(() => {
+                                const risk = parseInt(metrics.diseaseRisk) || 0;
+                                if (risk >= 60) return 'High disease risk. Take preventive measures immediately.';
+                                if (risk >= 30) return 'Moderate risk. Monitor crops closely.';
+                                return 'Low disease risk. Continue regular monitoring.';
+                              })()}
+                            </p>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Pest Risk Metric */}
                       <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:scale-105 hover:shadow-md",
+                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
                         pestStatus.border,
                         "shadow-md"
                       )}>
@@ -1032,12 +1171,33 @@ export default function Alerts() {
                         <p className={cn("text-2xl font-bold mb-1", pestStatus.color)}>
                           {metrics.pestRisk}%
                         </p>
-                        <p className="text-xs text-gray-500">Risk</p>
+                        <p className="text-xs text-gray-500 mb-2">Risk</p>
+                        <div className="mt-auto pt-2 border-t border-gray-200">
+                          {(() => {
+                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                            return descriptions[descKey]?.pestRisk ? (
+                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                {descriptions[descKey].pestRisk}
+                              </p>
+                            ) : loadingDescriptions[descKey] ? (
+                              <p className="text-xs text-gray-400 italic">Generating description...</p>
+                            ) : (
+                            <p className="text-xs text-gray-600 italic">
+                              {(() => {
+                                const risk = parseInt(metrics.pestRisk) || 0;
+                                if (risk >= 60) return 'High pest risk. Apply pest control measures.';
+                                if (risk >= 30) return 'Moderate risk. Monitor for pest activity.';
+                                return 'Low pest risk. Continue regular monitoring.';
+                              })()}
+                            </p>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Stress Index Metric */}
                       <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:scale-105 hover:shadow-md",
+                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
                         stressStatus.border,
                         "shadow-md"
                       )}>
@@ -1048,7 +1208,28 @@ export default function Alerts() {
                         <p className={cn("text-2xl font-bold mb-1", stressStatus.color)}>
                           {metrics.stressIndex}%
                         </p>
-                        <p className="text-xs text-gray-500">Index</p>
+                        <p className="text-xs text-gray-500 mb-2">Index</p>
+                        <div className="mt-auto pt-2 border-t border-gray-200">
+                          {(() => {
+                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                            return descriptions[descKey]?.stressIndex ? (
+                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                {descriptions[descKey].stressIndex}
+                              </p>
+                            ) : loadingDescriptions[descKey] ? (
+                              <p className="text-xs text-gray-400 italic">Generating description...</p>
+                            ) : (
+                            <p className="text-xs text-gray-600 italic">
+                              {(() => {
+                                const stress = parseInt(metrics.stressIndex) || 0;
+                                if (stress >= 60) return 'High crop stress. Check irrigation and nutrients.';
+                                if (stress >= 30) return 'Moderate stress. Monitor conditions.';
+                                return 'Low crop stress. Crops are healthy.';
+                              })()}
+                            </p>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
 
@@ -1068,15 +1249,19 @@ export default function Alerts() {
                         </div>
                         <h4 className="text-base font-bold text-gray-900">Farm Advisory</h4>
                       </div>
-                      <ul className="space-y-2.5">
+                      <ul className="space-y-4 mb-4">
                         {(alert.actions && alert.actions.length > 0) ? (
                           alert.actions.map((a, i) => (
-                            <li key={i} className="flex items-start gap-3">
+                            <li key={i} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
                               <div className={cn(
-                                "mt-2 h-2 w-2 shrink-0 rounded-full",
+                                "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
                                 colors.advisoryDot
                               )} />
-                              <span className="text-sm text-gray-700 leading-relaxed font-medium">{a}</span>
+                              <div className="flex-1">
+                                <span className="text-sm text-gray-900 leading-relaxed font-bold block">
+                                  {a}
+                                </span>
+                              </div>
                             </li>
                           ))
                         ) : (
