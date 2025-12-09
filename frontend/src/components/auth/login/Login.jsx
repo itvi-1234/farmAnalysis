@@ -194,8 +194,8 @@ const Login = () => {
                             required
                         >
                             <option value="" disabled>Select your role</option>
-                            <option value="farmer">👨‍🌾 Farmer</option>
-                            <option value="vendor">🏪 Vendor</option>
+                            <option value="farmer">Farmer</option>
+                            <option value="vendor">Vendor</option>
                         </select>
                     </div>
                     

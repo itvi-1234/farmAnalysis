@@ -282,7 +282,7 @@ const Analytics = () => {
             </div>
           </div>
 
-          {/* 📊 KPI CARDS */}
+          {/* KPI CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatCard title="Avg Health (NDVI)" value={stats.avgNDVI} unit="Index" icon={Sprout} color="text-green-600" bg="bg-green-50" />
             <StatCard title="Total Rainfall" value={stats.totalRain} unit="mm" icon={CloudRain} color="text-blue-600" bg="bg-blue-50" />

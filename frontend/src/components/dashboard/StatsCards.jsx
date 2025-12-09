@@ -62,7 +62,7 @@ const StatsCards = ({ field, totalFields = 1, alertsData = { total: 0, highPrior
       diseaseStatus = "High risk - Action needed";
     }
     
-    console.log("📊 Disease Risk Calculation:", { ndviValue, diseasePercentage, diseaseStatus });
+    console.log("Disease Risk Calculation:", { ndviValue, diseasePercentage, diseaseStatus });
   } else if (!lstmData) {
     diseaseStatus = "No data available";
   }

@@ -224,7 +224,7 @@ const VendorOpportunities = () => {
               </p>
               {!vendorData?.locationCoords && (
                 <p className="text-sm text-orange-600 mt-2">
-                  💡 Tip: Add your location in Vendor Dashboard to see nearby farmers
+                  Tip: Add your location in Vendor Dashboard to see nearby farmers
                 </p>
               )}
             </div>
@@ -242,7 +242,7 @@ const VendorOpportunities = () => {
                       </h3>
                       {opp.distance && (
                         <p className="text-sm text-green-600 font-medium">
-                          📍 {opp.distance} km away
+                          {opp.distance} km away
                         </p>
                       )}
                     </div>

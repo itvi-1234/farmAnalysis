@@ -25,7 +25,7 @@ const missingVars = requiredEnvVars.filter(
 );
 
 if (missingVars.length > 0) {
-  console.error('❌ Missing Firebase environment variables:', missingVars);
+  console.error('Missing Firebase environment variables:', missingVars);
   console.error('Please create a .env file in the frontend directory with the required Firebase configuration.');
   console.error('See .env.example for reference.');
 }
@@ -43,19 +43,19 @@ try {
   // Set error handling for auth
   auth.onAuthStateChanged((user) => {
     if (user) {
-      console.log('✅ User authenticated:', user.email);
+      console.log('User authenticated:', user.email);
     }
   }, (error) => {
-    console.error('❌ Firebase Auth Error:', error);
+    console.error('Firebase Auth Error:', error);
     // Don't show error if it's just a network issue or API key validation
     if (error.code !== 'auth/network-request-failed' && error.code !== 'auth/api-key-not-valid') {
       console.error('Error details:', error.message);
     }
   });
   
-  console.log('✅ Firebase initialized successfully');
+  console.log('Firebase initialized successfully');
 } catch (error) {
-  console.error('❌ Firebase initialization error:', error);
+  console.error('Firebase initialization error:', error);
   console.error('Please check your Firebase configuration in .env file');
 }
 

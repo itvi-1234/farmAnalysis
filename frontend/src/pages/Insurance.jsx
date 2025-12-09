@@ -63,7 +63,7 @@ const Insurance = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-2">
-              🛡️ Crop Insurance
+              Crop Insurance
             </h1>
             <p className="text-gray-600 text-base">
               Protect your crops with insurance from trusted providers

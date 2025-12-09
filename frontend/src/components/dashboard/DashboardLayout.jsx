@@ -92,14 +92,14 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           });
           
           setAlertsData({ total, highPriority });
-          console.log("✅ Loaded alerts from cache:", { total, highPriority, alerts });
+          console.log("Loaded alerts from cache:", { total, highPriority, alerts });
         } else {
           // If no cache, try to fetch alerts directly
-          console.log("⚠️ No alerts cache found, fetching alerts directly...");
+          console.log("No alerts cache found, fetching alerts directly...");
           fetchAlertsDirectly();
         }
       } catch (err) {
-        console.error("❌ Error loading alerts from cache:", err);
+        console.error("Error loading alerts from cache:", err);
         fetchAlertsDirectly();
       }
     };
@@ -145,11 +145,11 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
             });
             
             setAlertsData({ total, highPriority });
-            console.log("✅ Fetched alerts directly:", { total, highPriority });
+            console.log("Fetched alerts directly:", { total, highPriority });
           }
         }
       } catch (err) {
-        console.error("❌ Error fetching alerts directly:", err);
+        console.error("Error fetching alerts directly:", err);
         setAlertsData({ total: 0, highPriority: 0 });
       }
     };
@@ -159,7 +159,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
     // Listen to storage events (when Alerts page updates cache in another tab)
     const handleStorageChange = (e) => {
       if (e.key && e.key.startsWith(`alerts_cache_${currentUser?.uid}_${selectedField?.id}`)) {
-        console.log("📢 Storage event detected, reloading alerts...");
+        console.log("Storage event detected, reloading alerts...");
         loadAlertsFromCache();
       }
     };
@@ -167,7 +167,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
     // Listen to custom events (when Alerts page updates cache in same tab)
     const handleAlertsUpdated = (e) => {
       if (e.detail && e.detail.fieldId === selectedField?.id) {
-        console.log("📢 Custom alertsUpdated event detected, reloading alerts...");
+        console.log("Custom alertsUpdated event detected, reloading alerts...");
         loadAlertsFromCache();
       }
     };
@@ -194,7 +194,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       }
 
       try {
-        console.log("🌾 Fetching LSTM data for dashboard:", selectedField.lat, selectedField.lng);
+        console.log("Fetching LSTM data for dashboard:", selectedField.lat, selectedField.lng);
         
         const response = await fetch("https://itvi-1234-lstmnew.hf.space/predict", {
           method: "POST",
@@ -205,19 +205,19 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           })
         });
 
-        console.log("📡 LSTM API Response status:", response.status);
+        console.log("LSTM API Response status:", response.status);
         const result = await response.json();
-        console.log("📊 LSTM API Result:", result);
+        console.log("LSTM API Result:", result);
 
         if (result && result.success) {
           const data = result.data || {};
           setLstmData(data);
-          console.log("✅ LSTM data updated");
+          console.log("LSTM data updated");
         } else {
           setLstmData(null);
         }
       } catch (err) {
-        console.error("❌ Error fetching LSTM data:", err);
+        console.error("Error fetching LSTM data:", err);
         setLstmData(null);
       }
     };
@@ -234,7 +234,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
 
     const fetchFields = async () => {
       try {
-        console.log("🔍 Fetching fields for user:", currentUser.uid);
+        console.log("Fetching fields for user:", currentUser.uid);
         
         // Fetch fields from subcollection
         const fieldsRef = collection(db, "users", currentUser.uid, "fields");
@@ -260,11 +260,11 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
         // Sort fields by creation date (oldest first) to maintain field numbering
         fetchedFields.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-        console.log("✅ Fetched fields:", fetchedFields);
+        console.log("Fetched fields:", fetchedFields);
 
         if (fetchedFields.length === 0) {
           // No fields found, create a default one
-          console.log("⚠️ No fields found, using default");
+          console.log("No fields found, using default");
           const defaultField = {
             id: "default",
             name: "My Field",
@@ -298,7 +298,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           }
         }
       } catch (error) {
-        console.error("❌ Error fetching fields:", error);
+        console.error("Error fetching fields:", error);
         // Fallback to default field
         const defaultField = {
           id: "default",
@@ -333,9 +333,9 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       try {
         const userRef = doc(db, "users", currentUser.uid);
         await setDoc(userRef, { selectedFieldId: fieldId }, { merge: true });
-        console.log("✅ Saved field preference:", fieldId);
+        console.log("Saved field preference:", fieldId);
       } catch (error) {
-        console.error("❌ Error saving field preference:", error);
+        console.error("Error saving field preference:", error);
       }
     }
   };
@@ -358,7 +358,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       const fieldRef = doc(db, "users", currentUser.uid, "fields", fieldId);
       await deleteDoc(fieldRef);
       
-      console.log("✅ Field deleted:", fieldId);
+      console.log("Field deleted:", fieldId);
       
       // Update local state
       const updatedFields = fields.filter(f => f.id !== fieldId);
@@ -378,7 +378,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       
       alert(`Field "${fieldToDelete.name}" deleted successfully!`);
     } catch (error) {
-      console.error("❌ Error deleting field:", error);
+      console.error("Error deleting field:", error);
       alert(`Failed to delete field: ${error.message}`);
     }
   };
@@ -397,7 +397,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
 >
         <div className="max-w-screen-2xl mx-auto">
 
-          {/* ✅ FIELD SELECTOR DROPDOWN */}
+          {/* FIELD SELECTOR DROPDOWN */}
           {loading ? (
             <div className="mb-6 text-center text-gray-500">
               Loading fields...

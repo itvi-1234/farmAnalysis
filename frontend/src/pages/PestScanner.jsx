@@ -124,7 +124,7 @@ export default function PestScanner() {
                 className={`w-full py-4 rounded-lg text-white font-semibold text-lg transition 
                   ${loading ? "bg-gray-400" : "bg-orange-600 hover:bg-orange-700"}`}
               >
-                {loading ? "Scanning..." : "🔍 Scan for Pests"}
+                {loading ? "Scanning..." : "Scan for Pests"}
               </button>
 
               {loading && (
@@ -153,7 +153,7 @@ export default function PestScanner() {
 
     {/* If NOT SAFE → Show Pest Name Instead of Count */}
     {result.status !== "SAFE" &&
-      `⚠️ ${result.report?.[0]?.pest || "Pest Detected"}`}
+      `${result.report?.[0]?.pest || "Pest Detected"}`}
   </div>
 
   {result.status !== "SAFE" && (

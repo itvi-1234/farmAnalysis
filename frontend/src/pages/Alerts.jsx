@@ -263,7 +263,7 @@ export default function Alerts() {
         detail: { fieldId, cacheKey }
       }));
       
-      console.log("✅ Alerts saved to cache and event dispatched:", cacheKey);
+      console.log("Alerts saved to cache and event dispatched:", cacheKey);
     } catch (err) {
       console.error("Error saving alerts to cache:", err);
     }
@@ -356,7 +356,7 @@ export default function Alerts() {
   };
 
   const runLSTM = useCallback(async (latVal, lonVal) => {
-    console.log("🌾 Running LSTM with coordinates:", latVal, lonVal);
+    console.log("Running LSTM with coordinates:", latVal, lonVal);
     setLoading(true);
     setError(null);
 
@@ -367,9 +367,9 @@ export default function Alerts() {
         body: JSON.stringify({ lat: latVal, lon: lonVal }),
       });
 
-      console.log("📡 LSTM API Response status:", resp.status);
+      console.log("LSTM API Response status:", resp.status);
       const result = await resp.json();
-      console.log("📊 LSTM API Result:", result);
+      console.log("LSTM API Result:", result);
 
       if (!result || !result.success) {
         setError("LSTM API returned unsuccessful response");
@@ -422,10 +422,10 @@ export default function Alerts() {
         saveAlertsToCache(selectedField.id, newAlerts);
       }
       
-      console.log("✅ Alerts updated successfully");
+      console.log("Alerts updated successfully");
       setLoading(false);
     } catch (err) {
-      console.error("❌ LSTM Fetch Error:", err);
+      console.error("LSTM Fetch Error:", err);
       setError(err.message || "Failed to fetch alerts");
       setAlerts({ daily: [], weekly: [], biweekly: [] });
       setLoading(false);
@@ -437,17 +437,17 @@ export default function Alerts() {
   ---------------------------------------------------- */
   const loadFieldData = useCallback(async (forceRefresh = false) => {
     if (!selectedField) {
-      console.log("⚠️ No field selected");
+      console.log("No field selected");
       return;
     }
 
-    console.log("🔍 Loading field data:", selectedField.name);
+    console.log("Loading field data:", selectedField.name);
     
     // Check cache first (unless forcing refresh)
     if (!forceRefresh) {
       const cachedAlerts = loadAlertsFromCache(selectedField.id);
       if (cachedAlerts) {
-        console.log("📦 Loading alerts from cache");
+        console.log("Loading alerts from cache");
         setAlerts(cachedAlerts);
         setLastLoadedFieldId(selectedField.id);
         setError(null);
@@ -468,7 +468,7 @@ export default function Alerts() {
         setLoading(false);
       }
     } catch (err) {
-      console.error("❌ Error loading field data:", err);
+      console.error("Error loading field data:", err);
       setError("Failed to load field data");
       setLoading(false);
     }
@@ -580,7 +580,7 @@ export default function Alerts() {
       
       if (alert.metrics) {
         const metrics = alert.metrics;
-        message += `\n📊 Metrics:\n`;
+        message += `\nMetrics:\n`;
         message += `- NDVI: ${metrics.ndvi}\n`;
         message += `- Soil Moisture: ${metrics.moisture}\n`;
         message += `- Disease Risk: ${metrics.diseaseRisk}%\n`;
@@ -589,7 +589,7 @@ export default function Alerts() {
       }
       
       if (alert.actions && alert.actions.length > 0) {
-        message += `\n⚠️ Actions Required:\n`;
+        message += `\nActions Required:\n`;
         alert.actions.forEach((action, i) => {
           message += `${i + 1}. ${action}\n`;
         });
@@ -615,22 +615,22 @@ export default function Alerts() {
       );
 
       if (response.ok) {
-        console.log("✅ Alert sent successfully to Agentic AI");
+        console.log("Alert sent successfully to Agentic AI");
         if (showAlert) {
-          alert("✅ Alert sent successfully to phone number 7355074001!");
+          alert("Alert sent successfully to phone number 7355074001!");
         }
         return true;
       } else {
-        console.error("❌ Failed to send alert:", response.statusText);
+        console.error("Failed to send alert:", response.statusText);
         if (showAlert) {
-          alert("❌ Failed to send alert. Please try again.");
+          alert("Failed to send alert. Please try again.");
         }
         return false;
       }
     } catch (error) {
-      console.error("❌ Error sending alert to Agentic AI:", error);
+      console.error("Error sending alert to Agentic AI:", error);
       if (showAlert) {
-        alert("❌ Error sending alert. Please check your connection and try again.");
+        alert("Error sending alert. Please check your connection and try again.");
       }
       return false;
     }
@@ -658,9 +658,9 @@ export default function Alerts() {
     }
 
     if (successCount === currentAlerts.length) {
-      alert(`✅ Successfully sent all ${currentAlerts.length} alerts to phone number 7355074001!`);
+      alert(`Successfully sent all ${currentAlerts.length} alerts to phone number 7355074001!`);
     } else {
-      alert(`⚠️ Sent ${successCount} out of ${currentAlerts.length} alerts. Some alerts failed to send.`);
+      alert(`Sent ${successCount} out of ${currentAlerts.length} alerts. Some alerts failed to send.`);
     }
   };
 

@@ -203,10 +203,10 @@ const AIAssistant = () => {
           <div className="flex flex-wrap gap-2 mt-4">
             {[
               "🌱 Soil Health",
-              "🌾 Crop Advice", 
+              "Crop Advice", 
               "💧 Irrigation",
               "🐛 Pest Control",
-              "📊 Weather Insights"
+              "Weather Insights"
             ].map((feature, index) => (
               <span key={index} className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm text-white text-xs rounded-full border border-white border-opacity-30">
                 {feature}

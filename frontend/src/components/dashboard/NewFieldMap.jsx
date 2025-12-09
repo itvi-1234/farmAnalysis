@@ -45,7 +45,7 @@ const NewFieldMap = ({ showDrawer, setShowDrawer }) => {
         
         // Set field count to next number
         setFieldCount(existingFieldsCount + 1);
-        console.log(`📊 Found ${existingFieldsCount} existing fields. Next field will be #${existingFieldsCount + 1}`);
+        console.log(`Found ${existingFieldsCount} existing fields. Next field will be #${existingFieldsCount + 1}`);
 
         setLocationFetched(true);
       } catch (error) {

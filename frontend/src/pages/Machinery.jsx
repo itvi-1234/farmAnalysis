@@ -172,7 +172,7 @@ const Machinery = () => {
                         )}
                         {distance && (
                           <p className="text-sm text-green-600 font-medium mt-1">
-                            📍 {distance} km away
+                            {distance} km away
                           </p>
                         )}
                       </div>

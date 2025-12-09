@@ -23,7 +23,7 @@ const NewsSection = ({ selectedField }) => {
   // Update field location when selectedField changes
   useEffect(() => {
     if (selectedField && selectedField.lat && selectedField.lng) {
-      console.log("🎯 Using selected field coordinates:", selectedField);
+      console.log("Using selected field coordinates:", selectedField);
       setFieldLocation({
         latitude: selectedField.lat,
         longitude: selectedField.lng
@@ -34,7 +34,7 @@ const NewsSection = ({ selectedField }) => {
 
   useEffect(() => {
     if (currentUser) {
-      console.log("🔍 Current user detected, fetching field and location data...");
+      console.log("Current user detected, fetching field and location data...");
       fetchFieldAndLocation();
     } else {
       setLoading(false);
@@ -43,13 +43,13 @@ const NewsSection = ({ selectedField }) => {
 
   const fetchFieldAndLocation = async () => {
     if (!currentUser) {
-      console.log("❌ No current user");
+      console.log("No current user");
       setLoading(false);
       return;
     }
 
     try {
-      console.log(`📍 Fetching field and location data (attempt ${retryCountRef.current + 1}/${maxRetries + 1})...`);
+      console.log(`Fetching field and location data (attempt ${retryCountRef.current + 1}/${maxRetries + 1})...`);
       
       // Fetch field data first (priority)
       const fieldRef = doc(db, "fields", currentUser.uid);
@@ -58,7 +58,7 @@ const NewsSection = ({ selectedField }) => {
       let fieldData = null;
       if (fieldSnap.exists()) {
         fieldData = fieldSnap.data();
-        console.log("🌾 Field data found:", {
+        console.log("Field data found:", {
           hasField: true,
           lat: fieldData.lat,
           lng: fieldData.lng,
@@ -78,22 +78,22 @@ const NewsSection = ({ selectedField }) => {
           setError(null);
           retryCountRef.current = 0;
           
-          console.log("✅ Using FIELD location for weather:", location);
+          console.log("Using FIELD location for weather:", location);
           await fetchWeatherData(location.lat, location.lon, location.fieldName);
           return; // Exit early - we have field location
         }
       } else {
-        console.log("⚠️ No field data found");
+        console.log("No field data found");
       }
       
       // Fallback: Try to get user location if no field
-      console.log("📍 No field found, trying user location...");
+      console.log("No field found, trying user location...");
       const userRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
       
       if (userSnap.exists()) {
         const userData = userSnap.data();
-        console.log("👤 User data:", {
+        console.log("User data:", {
           hasLocation: !!userData.location,
           latitude: userData.location?.latitude,
           longitude: userData.location?.longitude
@@ -104,7 +104,7 @@ const NewsSection = ({ selectedField }) => {
             lat: userData.location.latitude,
             lon: userData.location.longitude
           };
-          console.log("✅ Using USER location for weather:", location);
+          console.log("Using USER location for weather:", location);
           setUserLocation(location);
           setUsingFieldLocation(false);
           setError(null);
@@ -124,7 +124,7 @@ const NewsSection = ({ selectedField }) => {
           fetchFieldAndLocation();
         }, 2000);
       } else {
-        console.log("❌ No location available after retries, requesting from browser...");
+        console.log("No location available after retries, requesting from browser...");
         if (!locationAttempted) {
           setLocationAttempted(true);
           requestLocationNow();
@@ -134,7 +134,7 @@ const NewsSection = ({ selectedField }) => {
         }
       }
     } catch (err) {
-      console.error("❌ Error fetching data:", err);
+      console.error("Error fetching data:", err);
       setError("Failed to fetch location data. Please try again.");
       setLoading(false);
     }
@@ -151,7 +151,7 @@ const NewsSection = ({ selectedField }) => {
   };
 
   const requestLocationNow = () => {
-    console.log("📍 Requesting location permission from browser...");
+    console.log("Requesting location permission from browser...");
     
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by this browser.");
@@ -178,7 +178,7 @@ const NewsSection = ({ selectedField }) => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        console.log("✅ Location obtained from browser:", { latitude, longitude });
+        console.log("Location obtained from browser:", { latitude, longitude });
         
         try {
           // Save to Firestore
@@ -202,16 +202,16 @@ const NewsSection = ({ selectedField }) => {
           setUsingFieldLocation(false);
           await fetchWeatherData(latitude, longitude, "Your Location");
         } catch (err) {
-          console.error("❌ Error saving location to Firestore:", err);
+          console.error("Error saving location to Firestore:", err);
           // Even if save fails, still fetch weather
-          console.log("⚠️ Fetching weather anyway with obtained location...");
+          console.log("Fetching weather anyway with obtained location...");
           setUserLocation({ lat: latitude, lon: longitude });
           setUsingFieldLocation(false);
           await fetchWeatherData(latitude, longitude, "Your Location");
         }
       },
       (err) => {
-        console.error("❌ Geolocation error:", err);
+        console.error("Geolocation error:", err);
         let errorMsg = "Failed to get location. ";
         
         switch(err.code) {
@@ -236,8 +236,8 @@ const NewsSection = ({ selectedField }) => {
   };
 
   const fetchWeatherData = async (lat, lon, locationName = "Unknown") => {
-    console.log(`🌤️ Fetching weather data for ${locationName} - lat: ${lat}, lon: ${lon}`);
-    console.log(`🔑 Using API key: ${OPENWEATHER_API_KEY}`);
+    console.log(`Fetching weather data for ${locationName} - lat: ${lat}, lon: ${lon}`);
+    console.log(`Using API key: ${OPENWEATHER_API_KEY}`);
     setLoading(true);
     setError(null);
 
@@ -250,24 +250,24 @@ const NewsSection = ({ selectedField }) => {
         units: 'metric'
       };
       
-      console.log("📡 Calling weather API:", weatherUrl, weatherParams);
+      console.log("Calling weather API:", weatherUrl, weatherParams);
       
       const weatherResponse = await axios.get(weatherUrl, {
         params: weatherParams,
         timeout: 10000
       });
 
-      console.log("✅ Current weather fetched:", weatherResponse.data);
+      console.log("Current weather fetched:", weatherResponse.data);
 
       const forecastUrl = `${OPENWEATHER_BASE_URL}/forecast`;
-      console.log("📡 Calling forecast API:", forecastUrl);
+      console.log("Calling forecast API:", forecastUrl);
       
       const forecastResponse = await axios.get(forecastUrl, {
         params: weatherParams,
         timeout: 10000
       });
 
-      console.log("✅ Forecast data fetched");
+      console.log("Forecast data fetched");
 
       setWeatherData({
         current: weatherResponse.data,
@@ -279,7 +279,7 @@ const NewsSection = ({ selectedField }) => {
       setError(null);
       setLoading(false);
     } catch (err) {
-      console.error("❌ Error fetching weather data:", err);
+      console.error("Error fetching weather data:", err);
       if (err.response) {
         console.error("API Error Response:", err.response.status, err.response.data);
         setError(`Weather API error: ${err.response.data.message || 'Failed to fetch weather data'}`);
@@ -518,7 +518,7 @@ const NewsSection = ({ selectedField }) => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              💡 Tip: Draw your field in "Farm Selection" to get weather for your specific field location.
+              Tip: Draw your field in "Farm Selection" to get weather for your specific field location.
             </p>
           </div>
         )}

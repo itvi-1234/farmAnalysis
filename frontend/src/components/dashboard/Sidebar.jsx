@@ -91,9 +91,10 @@ const Sidebar = () => {
   const farmerMenuItems = [
     { icon: LayoutDashboard, key: "sidebar_dashboard", href: "/home" },
     { icon: MapPin, key: "sidebar_farm_selection", href: "/farm-selection" },
+    { icon: FlaskConical, key: "sidebar_soil_analysis", href: "/soil-analysis"},
     { icon: Leaf, key: "sidebar_disease_detection", href: "/disease-detection"},
     { icon: Bug, key: "sidebar_pest_scanner", href: "/pest-scanner"},
-    { icon: FlaskConical, key: "sidebar_soil_analysis", href: "/soil-analysis"},
+    
     { icon: Package, key: "sidebar_logistics", href: "/logistics"},
     { icon: Shield, key: "sidebar_insurance", href: "/insurance"},
     { icon: Wrench, key: "sidebar_machinery", href: "/machinery"},

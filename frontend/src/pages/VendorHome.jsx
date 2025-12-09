@@ -210,7 +210,7 @@ const VendorHome = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {vendorData.services.map((service) => {
                   const serviceLabels = {
-                    insurance: "🛡️ Insurance",
+                    insurance: "Insurance",
                     machinery: "🚜 Machinery",
                     logistics: "🚚 Logistics",
                     buyCrops: "🛒 Buy Crops",

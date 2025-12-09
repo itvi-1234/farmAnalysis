@@ -123,14 +123,14 @@ const ReferenceIndexDisplay = ({ indexType, legendConfig }) => {
                     return [
                       { label: "Overgrown", color: "#1a9641", icon: "🌿" },
                       { label: "Healthy", color: "#a6d96a", icon: "✓" },
-                      { label: "Moderately Diseased", color: "#fdae61", icon: "⚠" },
+                      { label: "Moderately Diseased", color: "#fdae61", icon: "!" },
                       { label: "Highly Diseased", color: "#d7191c", icon: "✗" },
                     ];
                   case "EVI":
                     return [
                       { label: "Overgrown", color: "#1a9641", icon: "🌿" },
                       { label: "Healthy", color: "#a6d96a", icon: "✓" },
-                      { label: "Moderately Diseased", color: "#fdae61", icon: "⚠" },
+                      { label: "Moderately Diseased", color: "#fdae61", icon: "!" },
                       { label: "Highly Diseased", color: "#d7191c", icon: "✗" },
                     ];
                   case "NDRE":
@@ -138,7 +138,7 @@ const ReferenceIndexDisplay = ({ indexType, legendConfig }) => {
                       { label: "Early", color: "#1b8a3c", icon: "🌱" },
                       { label: "Vegetative", color: "#b2ff59", icon: "🍃" },
                       { label: "Flowering", color: "#c49a00", icon: "🌸" },
-                      { label: "Maturity", color: "#bdbdbd", icon: "🌾" },
+                      { label: "Maturity", color: "#bdbdbd", icon: "M" },
                     ];
                   default:
                     return [];

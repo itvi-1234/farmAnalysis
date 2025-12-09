@@ -34,7 +34,7 @@ const SoilAnalysis = () => {
 
     // Validation
     if (sensorCode.trim().length !== 30) {
-      setError("⚠️ Error: Code must be exactly 30 digits.");
+      setError("Error: Code must be exactly 30 digits.");
       return;
     }
 
@@ -57,7 +57,7 @@ const SoilAnalysis = () => {
         setError("Server Error: " + (data.error || "Unknown error"));
       }
     } catch (error) {
-      setError("❌ Connection Failed! Check your internet or API URL.");
+      setError("Connection Failed! Check your internet or API URL.");
       console.error(error);
     } finally {
       setLoading(false);
@@ -260,7 +260,7 @@ const SoilAnalysis = () => {
                         key={index}
                         className="flex items-start gap-3 bg-gray-50 border-b border-gray-200 p-4 rounded-lg"
                       >
-                        <span className="text-green-600 text-lg flex-shrink-0 mt-0.5">✅</span>
+                        <span className="text-green-600 text-lg flex-shrink-0 mt-0.5">OK</span>
                         <div className="text-gray-800 leading-relaxed flex-1">
                           {formatRecommendation(rec)}
                         </div>

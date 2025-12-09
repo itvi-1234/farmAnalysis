@@ -118,7 +118,7 @@ export default function LiveCheck() {
                   loading ? "bg-gray-400" : "bg-green-700 hover:bg-green-900"
                 }`}
               >
-                {loading ? "Analyzing..." : "🔍 Analyze Disease"}
+                {loading ? "Analyzing..." : "Analyze Disease"}
               </button>
 
               {loading && (

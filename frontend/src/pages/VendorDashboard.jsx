@@ -56,7 +56,7 @@ const VendorDashboard = () => {
   const [locationCoords, setLocationCoords] = useState(null);
 
   const serviceOptions = [
-    { id: "insurance", label: "Insurance", icon: "🛡️" },
+    { id: "insurance", label: "Insurance", icon: "I" },
     { id: "machinery", label: "Machinery Rental", icon: "🚜" },
     { id: "logistics", label: "Logistics/Cold Storage", icon: "🚚" },
     { id: "buyCrops", label: "Buy Crops from Farmers", icon: "🛒" },
@@ -99,7 +99,7 @@ const VendorDashboard = () => {
     } catch (error) {
       console.error("Error fetching vendor data:", error);
       if (error.code === 'permission-denied') {
-        console.error("❌ Permission denied. Please check Firestore security rules.");
+        console.error("Permission denied. Please check Firestore security rules.");
         alert("Permission denied. Please make sure Firestore security rules are configured correctly.");
       }
     }
@@ -280,7 +280,7 @@ const VendorDashboard = () => {
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-2">
-              🏪 Vendor Dashboard
+              Vendor Dashboard
             </h1>
             <p className="text-gray-600 text-base">
               Manage your vendor profile and services
@@ -469,7 +469,7 @@ const VendorDashboard = () => {
             {/* Insurance List - Only show when insurance service is selected */}
             {formData.services.includes("insurance") && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">🛡️ Insurance Services</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Insurance Services</h2>
                 <div className="space-y-4">
                   {formData.insuranceList.map((insurance, index) => (
                     <div

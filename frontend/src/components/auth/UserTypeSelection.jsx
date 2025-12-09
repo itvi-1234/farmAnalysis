@@ -49,9 +49,9 @@ const UserTypeSelection = () => {
                 Access farm management tools, soil analysis, crop monitoring, and connect with vendors
               </p>
               <div className="user-type-features">
-                <span>🌾 Crop Management</span>
+                <span>Crop Management</span>
                 <span>🌱 Soil Analysis</span>
-                <span>📊 Farm Analytics</span>
+                <span>Farm Analytics</span>
                 <span>🤝 Find Customers</span>
               </div>
             </div>
@@ -69,9 +69,9 @@ const UserTypeSelection = () => {
                 Offer services like insurance, machinery, logistics, and buy crops from farmers
               </p>
               <div className="user-type-features">
-                <span>🏪 List Services</span>
+                <span>List Services</span>
                 <span>🚚 Logistics</span>
-                <span>🛡️ Insurance</span>
+                <span>Insurance</span>
                 <span>🛒 Buy Crops</span>
               </div>
             </div>

@@ -30,11 +30,11 @@ export function AuthProvider({ children }) {
         console.error('Auth state change error:', error);
         // Handle specific error codes
         if (error.code === 'auth/api-key-not-valid') {
-          console.error('❌ Firebase API key is invalid. Please check your .env file.');
+          console.error('Firebase API key is invalid. Please check your .env file.');
         } else if (error.code === 'auth/network-request-failed') {
-          console.error('❌ Network error. Please check your internet connection.');
+          console.error('Network error. Please check your internet connection.');
         } else {
-          console.error('❌ Authentication error:', error.message);
+          console.error('Authentication error:', error.message);
         }
         setLoading(false);
       }

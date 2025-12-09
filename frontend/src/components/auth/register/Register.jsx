@@ -55,7 +55,7 @@ const Register = () => {
                             userType: existingData.userType || userType || 'farmer'
                         }, { merge: true })
                         
-                        console.log('✅ Location saved:', { latitude, longitude })
+                        console.log('Location saved:', { latitude, longitude })
                         resolve({ latitude, longitude })
                     } catch (error) {
                         console.error('Error saving location:', error)
@@ -191,7 +191,7 @@ const Register = () => {
                     <h4 className="title">Create Account</h4>
                     {userType && (
                         <p className="user-type-badge">
-                            {userType === 'farmer' ? '👨‍🌾 Farmer' : '🏪 Vendor'}
+                            {userType === 'farmer' ? 'Farmer' : 'Vendor'}
                         </p>
                     )}
                     

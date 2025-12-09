@@ -21,7 +21,7 @@ const FieldDetailsDrawer = ({ open, onClose, coordinates, centroid, suggestedFie
 
   // Debug: Log when component mounts
   React.useEffect(() => {
-    console.log("🎯 FieldDetailsDrawer mounted");
+    console.log("FieldDetailsDrawer mounted");
     console.log("DB object:", db);
     console.log("Current user:", currentUser);
   }, [currentUser]);
@@ -48,7 +48,7 @@ const FieldDetailsDrawer = ({ open, onClose, coordinates, centroid, suggestedFie
   };
 
   const handleSave = async () => {
-    console.log("🔍 handleSave called");
+    console.log("handleSave called");
     console.log("currentUser:", currentUser);
     console.log("centroid:", centroid);
     console.log("coordinates:", coordinates);
@@ -104,7 +104,7 @@ const FieldDetailsDrawer = ({ open, onClose, coordinates, centroid, suggestedFie
       const legacyFieldRef = doc(db, "fields", currentUser.uid);
       await setDoc(legacyFieldRef, fieldData, { merge: true });
 
-      console.log("✅ Field details saved successfully with ID:", docRef.id);
+      console.log("Field details saved successfully with ID:", docRef.id);
       alert(`Field "${fieldName}" saved successfully! You can now draw another field.`);
       
       // Reset form
@@ -121,7 +121,7 @@ const FieldDetailsDrawer = ({ open, onClose, coordinates, centroid, suggestedFie
         onClose();
       }
     } catch (error) {
-      console.error("❌ Error saving field details:", error);
+      console.error("Error saving field details:", error);
       console.error("Error code:", error.code);
       console.error("Error message:", error.message);
       alert(`Failed to save field details: ${error.message}`);

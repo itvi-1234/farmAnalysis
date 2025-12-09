@@ -153,7 +153,7 @@ const Logistics = () => {
                         </h3>
                         {distance && (
                           <p className="text-sm text-green-600 font-medium">
-                            📍 {distance} km away
+                            {distance} km away
                           </p>
                         )}
                       </div>
