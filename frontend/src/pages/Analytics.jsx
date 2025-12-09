@@ -291,15 +291,15 @@ const Analytics = () => {
           </div>
 
           {/* --- SECTION 1: WATER MANAGEMENT --- */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="grid grid-cols-1">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <Droplets className="w-5 h-5 text-blue-500" />
                   Soil Moisture vs Rainfall
                 </h3>
               </div>
-              <div className="h-[350px]">
+              <div className="h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -311,23 +311,6 @@ const Analytics = () => {
                     <Bar yAxisId="right" dataKey="precipitation" name="Rainfall" fill="#60a5fa" barSize={10} radius={[4,4,0,0]} />
                     <Line yAxisId="left" type="monotone" dataKey="soil_moisture" name="Soil Moisture" stroke="#0ea5e9" strokeWidth={3} dot={false} />
                   </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* SCATTER PLOT: Soil vs NDVI */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Moisture Efficiency</h3>
-              <p className="text-xs text-gray-500 mb-6">Does more water equal better health?</p>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" dataKey="soil_moisture" name="Soil Moisture" unit="%" domain={[0, 100]} label={{ value: 'Soil Moisture', position: 'bottom', offset: 0 }} />
-                    <YAxis type="number" dataKey="ndvi" name="NDVI" unit="" domain={[0, 1]} />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
-                    <Scatter name="Health Correlation" data={data} fill="#16a34a" line={{stroke: "#16a34a", strokeWidth: 1}} lineType="fitting" />
-                  </ScatterChart>
                 </ResponsiveContainer>
               </div>
             </div>
