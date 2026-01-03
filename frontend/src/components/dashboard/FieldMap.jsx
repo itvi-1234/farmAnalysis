@@ -271,7 +271,7 @@ const HeatmapImageOverlay = ({ imageUrl, bounds, polygon, opacity, visible, inde
       map.off("mouseout", handleMouseOut);
       overlay.remove();
     };
-  }, [map, imageUrl, bounds, polygon, opacity, visible, indexType, getPixelColor, onHoverInfo]);
+  }, [map, imageUrl, bounds, polygon, opacity, visible, indexType, getPixelColor, onHoverInfo, t]);
 
   return null;
 };
