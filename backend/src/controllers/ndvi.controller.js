@@ -1,9 +1,9 @@
 import axios from 'axios';
 import FormData from 'form-data';
 
-const CLIENT_ID = "2869324a-556d-47ef-8a86-51d6afa72823";
-const CLIENT_SECRET = "Dwwx2LD2ZAqBktucTUIF5QmeksgItyw3";
-const AI_BASE_URL = "https://itvi-1234-indexesall.hf.space"; 
+const CLIENT_ID = "9bf46563-3144-48d1-9f49-17894b739ff7";
+const CLIENT_SECRET = "UDfqaQnpJXLzxs4GkCN0iH3kFSWdpifW";
+const AI_BASE_URL = "https://itvi-1234-indexes-2all.hf.space"; 
 
 // Helper: Auth Token Lena
 async function getSentinelToken() {

@@ -15,7 +15,7 @@ router.post("/predict", upload.single("file"), async (req, res) => {
     const formData = new FormData();
     formData.append("file", new Blob([req.file.buffer]), req.file.originalname);
 
-    const HF_URL = "https://itvi-1234-pest-pred.hf.space/predict-pest";
+    const HF_URL = "https://itvi-1234-pest-2-itvi.hf.space/predict-pest";
 
     const response = await fetch(HF_URL, {
       method: "POST",

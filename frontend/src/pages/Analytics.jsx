@@ -50,7 +50,7 @@ const Analytics = () => {
     disease: false
   });
 
-  const API_URL = "https://itvi-1234-newcollectordata.hf.space/generate_data";
+  const API_URL = "https://itvi-1234-collectdata-itvi.hf.space/generate_data";
 
   const handleLogout = () => {
     doSignOut().then(() => navigate("/login"));

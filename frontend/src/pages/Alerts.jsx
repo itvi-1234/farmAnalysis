@@ -294,7 +294,7 @@ export default function Alerts() {
   /* ----------------------------------------------------
      2. LSTM API + convert into alert UI format (FULL)
   ---------------------------------------------------- */
-  const API_URL = "https://itvi-1234-lstmnew.hf.space/predict";
+  const API_URL = "https://itvi-1234-lstm-sumit-2.hf.space/predict";
 
   // small text cleaner
   const clean = (t) => {

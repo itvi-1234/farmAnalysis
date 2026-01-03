@@ -113,7 +113,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       }
 
       try {
-        const response = await fetch("https://itvi-1234-lstmnew.hf.space/predict", {
+        const response = await fetch("https://itvi-1234-lstm-sumit-2.hf.space/predict", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -198,7 +198,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       try {
         console.log("Fetching LSTM data for dashboard:", selectedField.lat, selectedField.lng);
         
-        const response = await fetch("https://itvi-1234-lstmnew.hf.space/predict", {
+        const response = await fetch("https://itvi-1234-lstm-sumit-2.hf.space/predict", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
