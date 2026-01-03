@@ -336,6 +336,26 @@ const NewsSection = ({ selectedField }) => {
     return date.toLocaleDateString();
   };
 
+  const translateWeatherDescription = (description) => {
+    // Map common weather descriptions to translation keys
+    const descLower = description.toLowerCase();
+
+    if (descLower.includes('clear')) return t("weather_condition_clear");
+    if (descLower.includes('cloud')) return t("weather_condition_clouds");
+    if (descLower.includes('rain')) return t("weather_condition_rain");
+    if (descLower.includes('drizzle')) return t("weather_condition_drizzle");
+    if (descLower.includes('thunderstorm') || descLower.includes('thunder')) return t("weather_condition_thunderstorm");
+    if (descLower.includes('snow')) return t("weather_condition_snow");
+    if (descLower.includes('mist')) return t("weather_condition_mist");
+    if (descLower.includes('fog')) return t("weather_condition_fog");
+    if (descLower.includes('haze')) return t("weather_condition_haze");
+    if (descLower.includes('smoke')) return t("weather_condition_smoke");
+    if (descLower.includes('dust')) return t("weather_condition_dust");
+
+    // Fallback to original description with capitalization
+    return description.charAt(0).toUpperCase() + description.slice(1);
+  };
+
   const getWeatherNews = () => {
     if (!weatherData || !weatherData.current) return [];
 
@@ -348,7 +368,7 @@ const NewsSection = ({ selectedField }) => {
 
     // Current weather update
     news.push({
-      title: `${t("weather_current_title")}: ${current.weather[0].description.charAt(0).toUpperCase() + current.weather[0].description.slice(1)}`,
+      title: `${t("weather_current_title")}: ${translateWeatherDescription(current.weather[0].description)}`,
       desc: `${t("weather_temperature")}: ${Math.round(current.main.temp)}°C | ${t("weather_feels_like")}: ${Math.round(current.main.feels_like)}°C | ${t("weather_humidity")}: ${current.main.humidity}% | ${t("weather_wind")}: ${current.wind.speed} m/s`,
       time: formatTime(current.dt),
       icon: Icon,
