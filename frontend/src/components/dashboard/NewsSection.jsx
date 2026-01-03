@@ -52,11 +52,11 @@ const NewsSection = ({ selectedField }) => {
 
     try {
       console.log(`Fetching field and location data (attempt ${retryCountRef.current + 1}/${maxRetries + 1})...`);
-      
+
       // Fetch field data first (priority)
       const fieldRef = doc(db, "fields", currentUser.uid);
       const fieldSnap = await getDoc(fieldRef);
-      
+
       let fieldData = null;
       if (fieldSnap.exists()) {
         fieldData = fieldSnap.data();
@@ -67,7 +67,7 @@ const NewsSection = ({ selectedField }) => {
           fieldName: fieldData.fieldName,
           cropName: fieldData.cropName
         });
-        
+
         if (fieldData.lat && fieldData.lng) {
           const location = {
             lat: fieldData.lat,
@@ -79,7 +79,7 @@ const NewsSection = ({ selectedField }) => {
           setUsingFieldLocation(true);
           setError(null);
           retryCountRef.current = 0;
-          
+
           console.log("Using FIELD location for weather:", location);
           await fetchWeatherData(location.lat, location.lon, location.fieldName);
           return; // Exit early - we have field location
@@ -87,12 +87,12 @@ const NewsSection = ({ selectedField }) => {
       } else {
         console.log("No field data found");
       }
-      
+
       // Fallback: Try to get user location if no field
       console.log("No field found, trying user location...");
       const userRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
-      
+
       if (userSnap.exists()) {
         const userData = userSnap.data();
         console.log("User data:", {
@@ -100,7 +100,7 @@ const NewsSection = ({ selectedField }) => {
           latitude: userData.location?.latitude,
           longitude: userData.location?.longitude
         });
-        
+
         if (userData.location && userData.location.latitude && userData.location.longitude) {
           const location = {
             lat: userData.location.latitude,
@@ -111,17 +111,17 @@ const NewsSection = ({ selectedField }) => {
           setUsingFieldLocation(false);
           setError(null);
           retryCountRef.current = 0;
-          
+
           await fetchWeatherData(location.lat, location.lon, "Your Location");
           return;
         }
       }
-      
+
       // No field and no user location
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current += 1;
         console.log(`⏳ No location data found, retrying in 2 seconds...`);
-        
+
         setTimeout(() => {
           fetchFieldAndLocation();
         }, 2000);
@@ -154,7 +154,7 @@ const NewsSection = ({ selectedField }) => {
 
   const requestLocationNow = () => {
     console.log("Requesting location permission from browser...");
-    
+
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by this browser.");
       setLoading(false);
@@ -181,13 +181,13 @@ const NewsSection = ({ selectedField }) => {
       async (position) => {
         const { latitude, longitude } = position.coords;
         console.log("Location obtained from browser:", { latitude, longitude });
-        
+
         try {
           // Save to Firestore
           const userRef = doc(db, "users", currentUser.uid);
           const userSnap = await getDoc(userRef);
           const existingData = userSnap.exists() ? userSnap.data() : {};
-          
+
           await setDoc(userRef, {
             ...existingData,
             location: {
@@ -196,9 +196,9 @@ const NewsSection = ({ selectedField }) => {
               timestamp: new Date().toISOString()
             }
           }, { merge: true });
-          
+
           console.log("💾 Location saved to Firestore successfully");
-          
+
           // Update state and fetch weather
           setUserLocation({ lat: latitude, lon: longitude });
           setUsingFieldLocation(false);
@@ -215,8 +215,8 @@ const NewsSection = ({ selectedField }) => {
       (err) => {
         console.error("Geolocation error:", err);
         let errorMsg = "Failed to get location. ";
-        
-        switch(err.code) {
+
+        switch (err.code) {
           case 1:
             errorMsg += "Please allow location access in your browser. Look for the location icon in your address bar.";
             break;
@@ -229,7 +229,7 @@ const NewsSection = ({ selectedField }) => {
           default:
             errorMsg += "Unknown error. Please try again.";
         }
-        
+
         setError(errorMsg);
         setLoading(false);
       },
@@ -251,9 +251,9 @@ const NewsSection = ({ selectedField }) => {
         appid: OPENWEATHER_API_KEY,
         units: 'metric'
       };
-      
+
       console.log("Calling weather API:", weatherUrl, weatherParams);
-      
+
       const weatherResponse = await axios.get(weatherUrl, {
         params: weatherParams,
         timeout: 10000
@@ -263,7 +263,7 @@ const NewsSection = ({ selectedField }) => {
 
       const forecastUrl = `${OPENWEATHER_BASE_URL}/forecast`;
       console.log("Calling forecast API:", forecastUrl);
-      
+
       const forecastResponse = await axios.get(forecastUrl, {
         params: weatherParams,
         timeout: 10000
@@ -277,7 +277,7 @@ const NewsSection = ({ selectedField }) => {
         location: weatherResponse.data.name || `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
         locationName: locationName
       });
-      
+
       setError(null);
       setLoading(false);
     } catch (err) {
@@ -328,7 +328,7 @@ const NewsSection = ({ selectedField }) => {
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
     const diffHours = Math.floor(diffMins / 60);
@@ -348,7 +348,7 @@ const NewsSection = ({ selectedField }) => {
 
     // Current weather update
     news.push({
-      title: `Current Weather: ${current.weather[0].description.charAt(0).toUpperCase() + current.weather[0].description.slice(1)}`,
+      title: `${t("weather_current_title")}: ${current.weather[0].description.charAt(0).toUpperCase() + current.weather[0].description.slice(1)}`,
       desc: `Temperature: ${Math.round(current.main.temp)}°C | Feels like: ${Math.round(current.main.feels_like)}°C | Humidity: ${current.main.humidity}% | Wind: ${current.wind.speed} m/s`,
       time: formatTime(current.dt),
       icon: Icon,
@@ -359,12 +359,12 @@ const NewsSection = ({ selectedField }) => {
     // Check for rain in forecast (next 24 hours)
     if (forecast && forecast.list) {
       const next24Hours = forecast.list.slice(0, 8);
-      const hasRain = next24Hours.some(item => 
+      const hasRain = next24Hours.some(item =>
         item.weather[0].main === "Rain" || item.weather[0].main === "Drizzle" || item.weather[0].main === "Thunderstorm"
       );
-      
+
       if (hasRain) {
-        const rainForecast = next24Hours.find(item => 
+        const rainForecast = next24Hours.find(item =>
           item.weather[0].main === "Rain" || item.weather[0].main === "Drizzle" || item.weather[0].main === "Thunderstorm"
         );
         if (rainForecast) {

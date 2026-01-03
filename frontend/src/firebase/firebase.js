@@ -42,7 +42,7 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
   rtdb = getDatabase(app);
-  
+
   // Set error handling for auth
   auth.onAuthStateChanged((user) => {
     if (user) {
@@ -55,7 +55,7 @@ try {
       console.error('Error details:', error.message);
     }
   });
-  
+
   console.log('Firebase initialized successfully');
 } catch (error) {
   console.error('Firebase initialization error:', error);

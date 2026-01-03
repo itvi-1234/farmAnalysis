@@ -234,5 +234,6 @@
   "weather_wind_title": "तेज़ हवा चेतावनी",
   "weather_wind_desc": "हवा की गति {{value}} m/s है। संरचनाएँ सुरक्षित करें और फसल की रक्षा करें।",
   "weather_humidity_title": "उच्च आर्द्रता चेतावनी",
-  "weather_humidity_desc": "आर्द्रता {{value}}% है। फफूंद रोगों के लिए फसल पर नज़र रखें।"
+  "weather_humidity_desc": "आर्द्रता {{value}}% है। फफूंद रोगों के लिए फसल पर नज़र रखें।",
+  "weather_current_title": "वर्तमान मौसम"
 }

@@ -40,11 +40,11 @@ const Register = () => {
                         const db = getFirestore()
                         const auth = getAuth()
                         const userRef = doc(db, 'users', auth.currentUser.uid)
-                        
+
                         // Get existing user data
                         const userSnap = await getDoc(userRef)
                         const existingData = userSnap.exists() ? userSnap.data() : {}
-                        
+
                         await setDoc(userRef, {
                             ...existingData,
                             location: {
@@ -54,7 +54,7 @@ const Register = () => {
                             },
                             userType: existingData.userType || userType || 'farmer'
                         }, { merge: true })
-                        
+
                         console.log('Location saved:', { latitude, longitude })
                         resolve({ latitude, longitude })
                     } catch (error) {
@@ -77,16 +77,28 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if(!isRegistering) {
+        if (!isRegistering) {
             setIsRegistering(true)
             if (password !== confirmPassword) {
                 setErrorMessage("Passwords do not match")
                 setIsRegistering(false)
                 return
             }
+
+            // Request location permission FIRST (while we have user interaction context)
+            let locationData = null;
+            try {
+                console.log('Requesting location permission...');
+                locationData = await requestLocationPermission();
+                console.log('Location obtained:', locationData);
+            } catch (error) {
+                console.log('Location permission denied or failed:', error);
+                // Continue without location - don't block registration
+            }
+
             try {
                 await doCreateUserWithEmailAndPassword(email, password)
-                
+
                 // Save user type to Firestore
                 const db = getFirestore()
                 const auth = getAuth()
@@ -95,21 +107,17 @@ const Register = () => {
                     await setDoc(userRef, {
                         email: email,
                         userType: userType,
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        ...(locationData && {
+                            location: {
+                                latitude: locationData.latitude,
+                                longitude: locationData.longitude,
+                                timestamp: new Date().toISOString()
+                            }
+                        })
                     }, { merge: true })
                 }
-                
-                // Request location permission after successful registration
-                setTimeout(async () => {
-                    try {
-                        await requestLocationPermission()
-                        setLocationRequested(true)
-                    } catch (error) {
-                        console.log('Location permission denied or failed:', error)
-                        // Continue without location - don't block registration
-                    }
-                }, 1000)
-                
+
                 // Navigation handled by Navigate component below
             } catch (error) {
                 setErrorMessage(error.message)
@@ -124,7 +132,7 @@ const Register = () => {
             setIsRegistering(true)
             try {
                 await doSignInWithGoogle()
-                
+
                 // Save user type to Firestore
                 const db = getFirestore()
                 const auth = getAuth()
@@ -136,7 +144,7 @@ const Register = () => {
                         createdAt: new Date().toISOString()
                     }, { merge: true })
                 }
-                
+
                 // Request location permission after successful Google registration
                 setTimeout(async () => {
                     try {
@@ -162,11 +170,11 @@ const Register = () => {
             <div className="background-fallback"></div>
 
             {/* Background Video */}
-            <video 
-                className="background-video" 
-                autoPlay 
-                loop 
-                muted 
+            <video
+                className="background-video"
+                autoPlay
+                loop
+                muted
                 playsInline
                 preload="auto"
                 poster="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&h=1080&fit=crop"
@@ -194,7 +202,7 @@ const Register = () => {
                             {userType === 'farmer' ? 'Farmer' : 'Vendor'}
                         </p>
                     )}
-                    
+
                     <div className="mb-3">
                         <input
                             type="email"
@@ -250,8 +258,8 @@ const Register = () => {
                         </button>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         className="btn btn-primary"
                         disabled={isRegistering}
                     >
