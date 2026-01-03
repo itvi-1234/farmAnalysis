@@ -1,9 +1,23 @@
 # AgriVision Platform
 
-A full-stack precision agriculture app featuring:
-- Interactive dashboard (React + Vite + Tailwind, Recharts, Leaflet) for satellite analytics, field alerts, soil readings, live chat (Kisan Mitra), and reports.
-- Backend services (Node/Express) for AI-driven descriptions, PDF report generation, and Sentinel-2 heatmaps.
-- Firebase for auth, Firestore for data, Realtime Database for live soil sensor readings.
+A full-stack precision agriculture platform featuring real-time satellite analytics, AI-powered insights, and multilingual support (English, Hindi, Bengali).
+
+## Live Deployment
+
+- **Frontend**: https://frontend-taupe-rho-64.vercel.app/
+- **Backend API**: https://backend-wheat-rho-11.vercel.app/
+
+## Overview
+
+AgriVision combines satellite imagery, IoT sensor data, and AI to provide farmers with actionable insights:
+- Interactive dashboard with React, Vite, Tailwind CSS, Recharts, and Leaflet for satellite analytics
+- Real-time field monitoring with vegetation indices (NDVI, EVI, NDRE)
+- AI-powered chat assistant (Kisan Mitra) for farming guidance
+- Weather forecasting and alerts
+- Soil health monitoring with live sensor data
+- PDF report generation with satellite imagery and analytics
+- Firebase authentication and real-time database integration
+- Multi-language support (English, Hindi, Bengali)
 
 ## Contents
 - `frontend/` — React/Vite app (dashboard, analytics, alerts, soil analysis, chat).
@@ -66,12 +80,39 @@ npm run dev      # or npm start
 Backend typically on http://localhost:5000 (check your scripts/config).
 
 ## Key Features
-- **Dashboard & Kisan Mitra Chat**: Floating chat widget (bottom-right) with minimized/close controls, green theme.
-- **Field Map**: Leaflet map without attribution; polygon clipping for heatmap overlay; hover tooltips inside polygon only.
-- **Alerts**: Per-field alert cards with NDVI/moisture/disease/pest/stress metrics, change badges, AI descriptions keyed per field+alert.
-- **Analytics**: Recharts visualizations (soil moisture vs rain, VPD/temp, health indices, disease/growth) plus Groq-powered AI insights. Full-page loading screen while fetching.
-- **Soil Analysis**: Reads latest sensor data from Firebase Realtime DB (`soil`), record selector, delete record, aligned value/unit, hover effects, expanded spacing.
-- **Reports**: PDF generation combining heatmaps (Sentinel-2), KPIs, charts, recommendations. Fixed string/template issues, proper headers, and auth bearer handling.
+
+### Dashboard and Monitoring
+- **Interactive Field Map**: Leaflet-based map with satellite imagery overlay, polygon drawing for field selection
+- **Vegetation Indices**: Real-time NDVI, EVI, and NDRE calculations with color-coded heatmaps
+- **Weather Integration**: Live weather data with forecasts, temperature, humidity, wind speed
+- **Field Statistics**: Comprehensive stats cards showing field count, weather, vegetation health, and alerts
+
+### AI-Powered Features
+- **Kisan Mitra Chat**: Floating AI assistant (bottom-right) with minimized/close controls, powered by Gemini/Groq
+- **AI Insights**: Automated analysis and recommendations based on field data
+- **Smart Alerts**: AI-generated descriptions for NDVI, moisture, disease, pest, and stress metrics
+
+### Analytics and Reporting
+- **Advanced Charts**: Recharts visualizations for soil moisture vs rainfall, VPD/temperature, health indices
+- **Disease and Growth Tracking**: Historical data visualization with trend analysis
+- **PDF Reports**: Automated report generation with satellite imagery, KPIs, charts, and recommendations
+- **Export Capabilities**: Download reports and analytics data
+
+### Soil Analysis
+- **Live Sensor Data**: Real-time readings from Firebase Realtime Database
+- **Historical Records**: Record selector with delete functionality
+- **Multi-Parameter Monitoring**: NPK levels, pH, moisture, temperature tracking
+
+### Multilingual Support
+- **Three Languages**: Full support for English, Hindi, and Bengali
+- **Dynamic Translation**: All UI elements, weather descriptions, and system messages translate seamlessly
+- **Localized Weather**: Weather conditions and descriptions in user's preferred language
+
+### Field Management
+- **Multiple Fields**: Support for managing multiple farm fields
+- **Field Drawing**: Interactive polygon drawing tool for precise field boundaries
+- **Field Selection**: Easy switching between different fields with saved preferences
+- **Field Deletion**: Remove fields with confirmation dialog
 
 ## Notable Files
 - Frontend
@@ -109,10 +150,49 @@ npm run dev      # nodemon/ts-node style
 npm start        # production start
 ```
 
-## Deployment Notes
-- Provide env vars to both frontend (build-time) and backend (runtime).
-- For Vite, env vars must be prefixed with `VITE_`.
-- Ensure CORS settings on backend if frontend and backend are on different origins.
+## Deployment
+
+### Production Deployment (Vercel)
+
+The application is deployed on Vercel with the following configuration:
+
+**Frontend**: https://frontend-taupe-rho-64.vercel.app/
+- Deployed as a static SPA with Vite build
+- Environment variables configured in Vercel dashboard
+- Automatic deployments on push to main branch
+
+**Backend**: https://backend-wheat-rho-11.vercel.app/
+- Deployed as serverless functions
+- CORS configured for frontend domain
+- Firebase Admin SDK for authentication
+
+### Environment Variables Setup
+
+**Frontend (Vercel)**:
+- All Firebase configuration variables (VITE_FIREBASE_*)
+- VITE_API_BASE_URL pointing to backend deployment
+- VITE_GROQ_API_KEY for AI features
+
+**Backend (Vercel)**:
+- Firebase Admin SDK credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)
+- FIREBASE_DATABASE_URL for Realtime Database
+- GEMINI_API_KEY_2 for AI descriptions
+- NODE_ENV=production
+
+### Firebase Configuration
+
+1. **Authentication**: Email/Password and Google Sign-In enabled
+2. **Firestore Database**: Security rules configured for user data and fields
+3. **Realtime Database**: Rules set for soil sensor data
+4. **Authorized Domains**: Production domain added to Firebase Console
+
+### Deployment Steps
+
+1. Commit and push changes to GitHub
+2. Backend deployment: `cd backend && vercel --prod`
+3. Frontend deployment: `cd frontend && vercel --prod`
+4. Verify environment variables in Vercel dashboard
+5. Test production deployment
 
 ## Testing
 - Manual: verify map overlays, alert descriptions per field, analytics charts rendering, AI insight buttons, soil record delete, report PDF generation.
