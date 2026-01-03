@@ -349,7 +349,7 @@ const NewsSection = ({ selectedField }) => {
     // Current weather update
     news.push({
       title: `${t("weather_current_title")}: ${current.weather[0].description.charAt(0).toUpperCase() + current.weather[0].description.slice(1)}`,
-      desc: `Temperature: ${Math.round(current.main.temp)}°C | Feels like: ${Math.round(current.main.feels_like)}°C | Humidity: ${current.main.humidity}% | Wind: ${current.wind.speed} m/s`,
+      desc: `${t("weather_temperature")}: ${Math.round(current.main.temp)}°C | ${t("weather_feels_like")}: ${Math.round(current.main.feels_like)}°C | ${t("weather_humidity")}: ${current.main.humidity}% | ${t("weather_wind")}: ${current.wind.speed} m/s`,
       time: formatTime(current.dt),
       icon: Icon,
       ...colors,

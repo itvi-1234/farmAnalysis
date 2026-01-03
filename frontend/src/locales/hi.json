@@ -237,5 +237,9 @@
   "weather_humidity_desc": "आर्द्रता {{value}}% है। फफूंद रोगों के लिए फसल पर नज़र रखें।",
   "weather_current_title": "वर्तमान मौसम",
   "kisan_mitra": "किसान मित्र",
-  "ai_assistant": "एआई सहायक"
+  "ai_assistant": "एआई सहायक",
+  "weather_temperature": "तापमान",
+  "weather_feels_like": "महसूस होता है",
+  "weather_humidity": "आर्द्रता",
+  "weather_wind": "हवा"
 }

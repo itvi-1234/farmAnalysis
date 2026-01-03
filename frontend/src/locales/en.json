@@ -237,5 +237,9 @@
   "weather_humidity_desc": "Humidity is {{value}}%. High humidity can promote fungal diseases. Monitor crops closely.",
   "weather_current_title": "Current Weather",
   "kisan_mitra": "Kisan Mitra",
-  "ai_assistant": "AI Assistant"
+  "ai_assistant": "AI Assistant",
+  "weather_temperature": "Temperature",
+  "weather_feels_like": "Feels like",
+  "weather_humidity": "Humidity",
+  "weather_wind": "Wind"
 }
