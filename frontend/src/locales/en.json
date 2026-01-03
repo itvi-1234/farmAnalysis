@@ -235,5 +235,7 @@
   "weather_wind_desc": "Wind speed is {{value}} m/s. Secure structures and protect crops.",
   "weather_humidity_title": "High Humidity Alert",
   "weather_humidity_desc": "Humidity is {{value}}%. High humidity can promote fungal diseases. Monitor crops closely.",
-  "weather_current_title": "Current Weather"
+  "weather_current_title": "Current Weather",
+  "kisan_mitra": "Kisan Mitra",
+  "ai_assistant": "AI Assistant"
 }

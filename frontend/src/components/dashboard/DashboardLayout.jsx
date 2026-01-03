@@ -43,7 +43,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           appid: OPENWEATHER_API_KEY,
           units: 'metric'
         };
-        
+
         const response = await axios.get(weatherUrl, {
           params: weatherParams,
           timeout: 10000
@@ -72,15 +72,15 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
       try {
         const cacheKey = `alerts_cache_${currentUser.uid}_${selectedField.id}`;
         const cached = localStorage.getItem(cacheKey);
-        
+
         if (cached) {
           const cacheData = JSON.parse(cached);
           const alerts = cacheData.alerts;
-          
+
           // Count total alerts and high priority alerts
           let total = 0;
           let highPriority = 0;
-          
+
           // Check all periods: daily, weekly, biweekly
           ['daily', 'weekly', 'biweekly'].forEach(period => {
             if (alerts[period] && Array.isArray(alerts[period])) {
@@ -92,7 +92,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
               });
             }
           });
-          
+
           setAlertsData({ total, highPriority });
           console.log("Loaded alerts from cache:", { total, highPriority, alerts });
         } else {
@@ -127,10 +127,10 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           if (result && result.success) {
             const data = result.data || {};
             const forecast = data.forecast || {};
-            
+
             let total = 0;
             let highPriority = 0;
-            
+
             // Count alerts from all periods
             ['day_1', 'day_7', 'day_14'].forEach(period => {
               if (forecast[period]) {
@@ -139,13 +139,13 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
                 const disease = periodData.disease_risk ?? 0;
                 const pest = periodData.pest_risk ?? 0;
                 const stressIndex = data.stress_index ?? 0;
-                
+
                 if (Number(disease) > 60 || Number(pest) > 60 || Number(stressIndex) > 60) {
                   highPriority += 1;
                 }
               }
             });
-            
+
             setAlertsData({ total, highPriority });
             console.log("Fetched alerts directly:", { total, highPriority });
           }
@@ -157,7 +157,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
     };
 
     loadAlertsFromCache();
-    
+
     // Listen to storage events (when Alerts page updates cache in another tab)
     const handleStorageChange = (e) => {
       if (e.key && e.key.startsWith(`alerts_cache_${currentUser?.uid}_${selectedField?.id}`)) {
@@ -165,7 +165,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
         loadAlertsFromCache();
       }
     };
-    
+
     // Listen to custom events (when Alerts page updates cache in same tab)
     const handleAlertsUpdated = (e) => {
       if (e.detail && e.detail.fieldId === selectedField?.id) {
@@ -173,13 +173,13 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
         loadAlertsFromCache();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('alertsUpdated', handleAlertsUpdated);
-    
+
     // Re-check cache every 2 seconds to stay in sync
     const interval = setInterval(loadAlertsFromCache, 2000);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
@@ -197,7 +197,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
 
       try {
         console.log("Fetching LSTM data for dashboard:", selectedField.lat, selectedField.lng);
-        
+
         const response = await fetch("https://itvi-1234-lstm-sumit-2.hf.space/predict", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -237,11 +237,11 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
     const fetchFields = async () => {
       try {
         console.log("Fetching fields for user:", currentUser.uid);
-        
+
         // Fetch fields from subcollection
         const fieldsRef = collection(db, "users", currentUser.uid, "fields");
         const fieldsSnapshot = await getDocs(fieldsRef);
-        
+
         const fetchedFields = [];
         fieldsSnapshot.forEach((doc) => {
           fetchedFields.push({
@@ -281,11 +281,11 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           setSelectedField(defaultField);
         } else {
           setFields(fetchedFields);
-          
+
           // Check for saved field preference
           const userRef = doc(db, "users", currentUser.uid);
           const userDoc = await getDoc(userRef);
-          
+
           if (userDoc.exists() && userDoc.data().selectedFieldId) {
             const savedFieldId = userDoc.data().selectedFieldId;
             const savedField = fetchedFields.find(f => f.id === savedFieldId);
@@ -326,10 +326,10 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
   const handleFieldChange = async (fieldId) => {
     const field = fields.find(f => f.id === fieldId);
     if (!field) return;
-    
+
     setSelectedField(field);
     setHeatmapOverlay(null);
-    
+
     // Save to Firebase
     if (currentUser) {
       try {
@@ -345,27 +345,27 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
   // Delete field function
   const handleDeleteField = async (fieldId) => {
     if (!currentUser) return;
-    
+
     const fieldToDelete = fields.find(f => f.id === fieldId);
     if (!fieldToDelete) return;
-    
+
     const confirmDelete = window.confirm(
       `Are you sure you want to delete "${fieldToDelete.name}"? This action cannot be undone.`
     );
-    
+
     if (!confirmDelete) return;
-    
+
     try {
       // Delete from Firebase
       const fieldRef = doc(db, "users", currentUser.uid, "fields", fieldId);
       await deleteDoc(fieldRef);
-      
+
       console.log("Field deleted:", fieldId);
-      
+
       // Update local state
       const updatedFields = fields.filter(f => f.id !== fieldId);
       setFields(updatedFields);
-      
+
       // If deleted field was selected, select another field
       if (selectedField?.id === fieldId) {
         if (updatedFields.length > 0) {
@@ -377,7 +377,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           setSelectedField(null);
         }
       }
-      
+
       alert(`Field "${fieldToDelete.name}" deleted successfully!`);
     } catch (error) {
       console.error("Error deleting field:", error);
@@ -392,11 +392,11 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
 
       {/* Light green + glass effect */}
       <div
-  className="
+        className="
     pt-20 lg:ml-64 p-6 min-h-screen 
     bg-linear-to-br from-green-50 via-white to-green-100
   "
->
+      >
         <div className="max-w-screen-2xl mx-auto">
 
           {/* FIELD SELECTOR DROPDOWN */}
@@ -421,7 +421,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
                     </option>
                   ))}
                 </select>
-                
+
                 {/* Delete Field Button */}
                 {selectedField && selectedField.id !== "default" && (
                   <button
@@ -441,21 +441,21 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
 
           {/* Larger map + larger vegetation card */}
           {selectedField && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            {/* BIGGER FIELD MAP */}
-            <div className="lg:col-span-2">
-              <div className="h-[600px]">
+              {/* BIGGER FIELD MAP */}
+              <div className="lg:col-span-2">
+                <div className="h-[600px]">
                   <FieldMap field={selectedField} heatmapOverlay={heatmapOverlay} />
+                </div>
               </div>
-            </div>
 
               {/* BIGGER VEGETATION INDEX - Matched to Field Map height */}
               <div className="h-[600px]">
                 <VegetationIndexCard field={selectedField} onHeatmapReady={setHeatmapOverlay} />
-            </div>
+              </div>
 
-          </div>
+            </div>
           )}
 
           <NewsSection selectedField={selectedField} />
@@ -479,8 +479,8 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
           </div>
           <div className="flex flex-col items-start">
-            <span className="font-bold text-base sm:text-lg">Kisan Mitra</span>
-            <span className="text-xs text-white">AI Assistant</span>
+            <span className="font-bold text-base sm:text-lg">{t("kisan_mitra")}</span>
+            <span className="text-xs text-white">{t("ai_assistant")}</span>
           </div>
         </button>
       )}
@@ -505,7 +505,7 @@ const DashboardLayout = ({ currentUser, onLogout }) => {
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
             <MessageCircle className="h-5 w-5 text-green-600" />
           </div>
-          <span className="font-bold text-sm sm:text-base">Kisan Mitra</span>
+          <span className="font-bold text-sm sm:text-base">{t("kisan_mitra")}</span>
         </button>
       )}
     </>
