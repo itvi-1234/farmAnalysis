@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, X, Minimize2, Loader2 } from 'lucide-react';
+import { API_BASE } from '../../api/endpoints';
 
 const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
   const [messages, setMessages] = useState([
@@ -26,7 +27,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
 
   const generateGeminiResponse = async (userMessage) => {
     try {
-      const response = await fetch('http://localhost:5000/api/ai/generate', {
+      const response = await fetch(`${API_BASE}/api/ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,7 +38,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.response) {
         return data.response.trim();
       } else {
@@ -53,7 +54,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!inputMessage.trim()) return;
 
     const userMsg = {
@@ -69,7 +70,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
 
     try {
       const botResponse = await generateGeminiResponse(inputMessage);
-      
+
       const botMsg = {
         id: messages.length + 2,
         text: botResponse,
@@ -86,35 +87,35 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   const formatMessageText = (text) => {
     if (!text) return "";
-    
+
     let formatted = text
       .replace(/\*\*(.*?)\*\*/g, (match, content) => content)
       .replace(/__(.*?)__/g, (match, content) => content);
-    
+
     formatted = formatted.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, (match, content) => {
       if (/^\d+\./.test(content.trim()) || /^[-*]\s/.test(content.trim())) {
         return match;
       }
       return content;
     });
-    
+
     const lines = formatted.split('\n');
-    
+
     return lines.map((line, lineIndex) => {
       const trimmedLine = line.trim();
-      
+
       if (!trimmedLine) {
         return <React.Fragment key={lineIndex}>{lineIndex > 0 && <br />}</React.Fragment>;
       }
-      
+
       const numberedMatch = trimmedLine.match(/^(\d+)\.\s*(.+)$/);
       if (numberedMatch) {
         return (
@@ -126,7 +127,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
           </React.Fragment>
         );
       }
-      
+
       const bulletMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
       if (bulletMatch) {
         return (
@@ -136,7 +137,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
           </React.Fragment>
         );
       }
-      
+
       return (
         <React.Fragment key={lineIndex}>
           {lineIndex > 0 && <br />}
@@ -191,11 +192,10 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
           >
             <div className={`flex gap-2.5 max-w-[85%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
               {/* Avatar */}
-              <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                message.sender === 'user' 
-                  ? 'bg-blue-500' 
+              <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user'
+                  ? 'bg-blue-500'
                   : 'bg-green-600'
-              }`}>
+                }`}>
                 {message.sender === 'user' ? (
                   <User className="h-4 w-4 text-white" />
                 ) : (
@@ -204,19 +204,16 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
               </div>
 
               {/* Message Bubble */}
-              <div className={`rounded-2xl px-4 py-2.5 ${
-                message.sender === 'user'
+              <div className={`rounded-2xl px-4 py-2.5 ${message.sender === 'user'
                   ? 'bg-blue-500 text-white'
                   : 'bg-white border border-gray-200 text-gray-900'
-              }`}>
-                <div className={`text-sm leading-relaxed ${
-                  message.sender === 'user' ? 'text-white' : 'text-gray-900'
                 }`}>
+                <div className={`text-sm leading-relaxed ${message.sender === 'user' ? 'text-white' : 'text-gray-900'
+                  }`}>
                   {message.sender === 'bot' ? formatMessageText(message.text) : message.text}
                 </div>
-                <p className={`text-xs mt-1.5 ${
-                  message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
+                <p className={`text-xs mt-1.5 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                  }`}>
                   {formatTime(message.timestamp)}
                 </p>
               </div>
@@ -262,7 +259,7 @@ const KisanMitraChat = ({ isOpen, onClose, onMinimize }) => {
             <Send className="h-5 w-5" />
           </button>
         </form>
-        
+
         {/* Quick Suggestions */}
         <div className="flex flex-wrap gap-2 mt-3">
           {[

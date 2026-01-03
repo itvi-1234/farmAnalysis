@@ -7,6 +7,7 @@ import { doSignOut } from "../firebase/auth";
 import { FileText, Download, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import { API_BASE } from "../api/endpoints";
 
 const Reports = () => {
   const { currentUser, userLoggedIn } = useAuth();
@@ -27,15 +28,15 @@ const Reports = () => {
     try {
       const fieldsRef = collection(db, "users", currentUser.uid, "fields");
       const fieldsSnap = await getDocs(fieldsRef);
-      
+
       const fetchedFields = fieldsSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
+
       fetchedFields.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setFields(fetchedFields);
-      
+
       if (fetchedFields.length > 0 && !selectedFieldId) {
         setSelectedFieldId(fetchedFields[0].id);
       }
@@ -67,8 +68,8 @@ const Reports = () => {
     try {
       // Get Firebase auth token
       const token = await currentUser.getIdToken();
-      
-      const response = await fetch("http://localhost:5000/api/report/generate", {
+
+      const response = await fetch(`${API_BASE}/api/report/generate`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -86,7 +87,7 @@ const Reports = () => {
 
       // Create blob from response
       const blob = await response.blob();
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -112,7 +113,7 @@ const Reports = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
       <Navbar />
       <Sidebar />
-      
+
       <div className="lg:ml-64 pt-20 p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -122,7 +123,7 @@ const Reports = () => {
               <h1 className="text-3xl font-bold text-gray-800">Generate Report</h1>
             </div>
             <p className="text-gray-600">
-              Generate a comprehensive PDF report containing farmer details, field maps, 
+              Generate a comprehensive PDF report containing farmer details, field maps,
               disease predictions, soil analysis, heat maps, and analytics graphs.
             </p>
           </div>
@@ -130,7 +131,7 @@ const Reports = () => {
           {/* Field Selection */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Select Field</h2>
-            
+
             {fields.length === 0 ? (
               <div className="text-center py-8">
                 <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-3" />

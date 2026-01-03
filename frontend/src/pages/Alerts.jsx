@@ -24,6 +24,7 @@ import { doSignOut } from "../firebase/auth";
 
 import { db } from "../firebase/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { API_BASE } from "../api/endpoints";
 
 /* -------------------------------------------------------
    Utility: cn()
@@ -119,8 +120,8 @@ function TabsTrigger({ value: triggerValue, selectedValue, onValueChange, childr
       onClick={() => onValueChange?.(triggerValue)}
       className={cn(
         "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all",
-        isActive 
-          ? "bg-gray-100 text-gray-900 shadow-sm" 
+        isActive
+          ? "bg-gray-100 text-gray-900 shadow-sm"
           : "bg-white text-gray-700 hover:bg-gray-50"
       )}
     >
@@ -157,13 +158,13 @@ export default function Alerts() {
   const [error, setError] = useState(null);
   const [userType, setUserType] = useState(null);
   const [chatAlerts, setChatAlerts] = useState([]);
-  
+
   // Field selection for farmers
   const [fields, setFields] = useState([]);
   const [selectedField, setSelectedField] = useState(null);
   const [fieldsLoading, setFieldsLoading] = useState(true);
   const [lastLoadedFieldId, setLastLoadedFieldId] = useState(null);
-  
+
   // Descriptions for metrics
   const [descriptions, setDescriptions] = useState({});
   const [loadingDescriptions, setLoadingDescriptions] = useState({});
@@ -213,7 +214,7 @@ export default function Alerts() {
       try {
         const fieldsRef = collection(db, "users", currentUser.uid, "fields");
         const fieldsSnapshot = await getDocs(fieldsRef);
-        
+
         const fetchedFields = [];
         fieldsSnapshot.forEach((doc) => {
           fetchedFields.push({
@@ -229,7 +230,7 @@ export default function Alerts() {
         fetchedFields.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         setFields(fetchedFields);
-        
+
         // Auto-select first field if available
         if (fetchedFields.length > 0 && !selectedField) {
           setSelectedField(fetchedFields[0]);
@@ -250,7 +251,7 @@ export default function Alerts() {
      CACHE UTILITIES
   ---------------------------------------------------- */
   const getCacheKey = (fieldId) => `alerts_cache_${currentUser?.uid}_${fieldId}`;
-  
+
   const saveAlertsToCache = (fieldId, alertsData) => {
     if (!fieldId || !currentUser) return;
     try {
@@ -261,12 +262,12 @@ export default function Alerts() {
       };
       const cacheKey = getCacheKey(fieldId);
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      
+
       // Dispatch custom event to notify dashboard
       window.dispatchEvent(new CustomEvent('alertsUpdated', {
         detail: { fieldId, cacheKey }
       }));
-      
+
       console.log("Alerts saved to cache and event dispatched:", cacheKey);
     } catch (err) {
       console.error("Error saving alerts to cache:", err);
@@ -278,7 +279,7 @@ export default function Alerts() {
     try {
       const cached = localStorage.getItem(getCacheKey(fieldId));
       if (!cached) return null;
-      
+
       const cacheData = JSON.parse(cached);
       // Check if cache is for the same field
       if (cacheData.fieldId === fieldId) {
@@ -374,17 +375,17 @@ export default function Alerts() {
     try {
       // Create unique key that includes field ID to prevent conflicts between fields
       const descriptionKey = fieldId ? `${fieldId}_${alertId}` : alertId;
-      
+
       setLoadingDescriptions(prev => ({ ...prev, [descriptionKey]: true }));
-      
+
       console.log('Fetching descriptions for alert:', alertId, 'Field:', fieldId, metrics);
-      
-      const response = await fetch('http://localhost:5000/api/ai/alert-descriptions', {
+
+      const response = await fetch(`${API_BASE}/api/ai/alert-descriptions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           metrics,
           advisoryActions: advisoryActions || []
         }),
@@ -392,7 +393,7 @@ export default function Alerts() {
 
       const data = await response.json();
       console.log('Description API response:', data);
-      
+
       if (response.ok && data.success && data.descriptions) {
         console.log('Setting descriptions for alert:', descriptionKey, data.descriptions);
         setDescriptions(prev => ({
@@ -482,12 +483,12 @@ export default function Alerts() {
       };
 
       setAlerts(newAlerts);
-      
+
       // Save to cache if we have a selected field
       if (selectedField?.id) {
         saveAlertsToCache(selectedField.id, newAlerts);
       }
-      
+
       // Fetch descriptions for all alerts (include field ID to prevent conflicts)
       const fieldId = selectedField?.id || null;
       Object.values(newAlerts).flat().forEach(alert => {
@@ -495,7 +496,7 @@ export default function Alerts() {
           fetchDescriptions(alert.id, alert.metrics, alert.actions || [], fieldId);
         }
       });
-      
+
       console.log("Alerts updated successfully");
       setLoading(false);
     } catch (err) {
@@ -516,7 +517,7 @@ export default function Alerts() {
     }
 
     console.log("Loading field data:", selectedField.name);
-    
+
     // Check cache first (unless forcing refresh)
     if (!forceRefresh) {
       const cachedAlerts = loadAlertsFromCache(selectedField.id);
@@ -525,7 +526,7 @@ export default function Alerts() {
         setAlerts(cachedAlerts);
         setLastLoadedFieldId(selectedField.id);
         setError(null);
-        
+
         // Fetch descriptions for cached alerts too (with field ID)
         const fieldId = selectedField.id;
         Object.values(cachedAlerts).flat().forEach(alert => {
@@ -652,7 +653,7 @@ export default function Alerts() {
       const userRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
       let userName = "Farmer";
-      
+
       if (userSnap.exists()) {
         const userData = userSnap.data();
         const firstName = userData.firstName || "";
@@ -662,7 +663,7 @@ export default function Alerts() {
 
       // Build the message from alert data
       let message = `Alert: ${alert.title}\n`;
-      
+
       if (alert.metrics) {
         const metrics = alert.metrics;
         message += `\nMetrics:\n`;
@@ -672,7 +673,7 @@ export default function Alerts() {
         message += `- Pest Risk: ${metrics.pestRisk}%\n`;
         message += `- Stress Index: ${metrics.stressIndex}%\n`;
       }
-      
+
       if (alert.actions && alert.actions.length > 0) {
         message += `\nActions Required:\n`;
         alert.actions.forEach((action, i) => {
@@ -733,7 +734,7 @@ export default function Alerts() {
     const confirmSend = window.confirm(
       `Send ${currentAlerts.length} alert(s) to phone number 7355074001?`
     );
-    
+
     if (!confirmSend) return;
 
     let successCount = 0;
@@ -771,7 +772,7 @@ export default function Alerts() {
 
       <main className="pt-20 lg:ml-64 px-6 md:px-8">
         <div className="mx-auto max-w-6xl space-y-6 py-6">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -789,7 +790,7 @@ export default function Alerts() {
                 </p>
               </div>
             </div>
-            
+
             {/* Field Selector & Refresh Button for Farmers */}
             {!isVendor && (
               <div className="flex items-center gap-3">
@@ -815,17 +816,17 @@ export default function Alerts() {
                     </select>
                   </div>
                 )}
-                
+
                 {/* Refresh Button */}
-              <button
-                onClick={() => loadFieldData(true)}
+                <button
+                  onClick={() => loadFieldData(true)}
                   disabled={loading || !selectedField}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Loading...' : 'Refresh'}
-              </button>
-                
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Loading...' : 'Refresh'}
+                </button>
+
                 {/* Send Alerts Button */}
                 <button
                   onClick={sendAllAlerts}
@@ -860,13 +861,13 @@ export default function Alerts() {
 
           {/* Tabs */}
           {!isVendor && fields.length > 0 && (
-          <Tabs value={selectedType} onValueChange={setSelectedType}>
-            <TabsList value={selectedType} onValueChange={setSelectedType}>
-              <TabsTrigger value="daily"><Clock11 className="h-4 w-4" /> Daily</TabsTrigger>
-              <TabsTrigger value="weekly"><Clock className="h-4 w-4" /> Weekly</TabsTrigger>
-              <TabsTrigger value="biweekly"><Clock className="h-4 w-4" /> Biweekly</TabsTrigger>
-            </TabsList>
-          </Tabs>
+            <Tabs value={selectedType} onValueChange={setSelectedType}>
+              <TabsList value={selectedType} onValueChange={setSelectedType}>
+                <TabsTrigger value="daily"><Clock11 className="h-4 w-4" /> Daily</TabsTrigger>
+                <TabsTrigger value="weekly"><Clock className="h-4 w-4" /> Weekly</TabsTrigger>
+                <TabsTrigger value="biweekly"><Clock className="h-4 w-4" /> Biweekly</TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
 
           {/* Loading State */}
@@ -900,602 +901,602 @@ export default function Alerts() {
 
           {/* Alerts Grid */}
           {!loading && !error && !isVendor && (
-          <div className="space-y-6">
-            {currentAlerts.map((alert) => {
-              const conf = priorityConfig[alert.priority] || priorityConfig.medium;
-              const Icon = conf.icon;
-              
-              // Handle both new format (metrics) and old format (description)
-              let metrics = alert.metrics;
-              if (!metrics && alert.description) {
-                // Parse old format description
-                const desc = alert.description;
-                const ndviMatch = desc.match(/NDVI\s*=\s*([^\n]+)/i);
-                const smMatch = desc.match(/Moisture\s*=\s*([^\n]+)/i);
-                const diseaseMatch = desc.match(/Disease Risk\s*=\s*(\d+)/i);
-                const pestMatch = desc.match(/Pest Risk\s*=\s*(\d+)/i);
-                
-                metrics = {
-                  ndvi: ndviMatch ? ndviMatch[1].trim() : "-",
-                  moisture: smMatch ? smMatch[1].trim() : "-",
-                  diseaseRisk: diseaseMatch ? parseInt(diseaseMatch[1]) : 0,
-                  pestRisk: pestMatch ? parseInt(pestMatch[1]) : 0,
-                  stressIndex: 0,
+            <div className="space-y-6">
+              {currentAlerts.map((alert) => {
+                const conf = priorityConfig[alert.priority] || priorityConfig.medium;
+                const Icon = conf.icon;
+
+                // Handle both new format (metrics) and old format (description)
+                let metrics = alert.metrics;
+                if (!metrics && alert.description) {
+                  // Parse old format description
+                  const desc = alert.description;
+                  const ndviMatch = desc.match(/NDVI\s*=\s*([^\n]+)/i);
+                  const smMatch = desc.match(/Moisture\s*=\s*([^\n]+)/i);
+                  const diseaseMatch = desc.match(/Disease Risk\s*=\s*(\d+)/i);
+                  const pestMatch = desc.match(/Pest Risk\s*=\s*(\d+)/i);
+
+                  metrics = {
+                    ndvi: ndviMatch ? ndviMatch[1].trim() : "-",
+                    moisture: smMatch ? smMatch[1].trim() : "-",
+                    diseaseRisk: diseaseMatch ? parseInt(diseaseMatch[1]) : 0,
+                    pestRisk: pestMatch ? parseInt(pestMatch[1]) : 0,
+                    stressIndex: 0,
+                  };
+                }
+
+                if (!metrics) {
+                  metrics = {
+                    ndvi: "-",
+                    moisture: "-",
+                    diseaseRisk: 0,
+                    pestRisk: 0,
+                    stressIndex: 0,
+                  };
+                }
+
+                // Helper function to get metric status color with variety
+                const getMetricStatus = (value, type) => {
+                  if (type === 'ndvi') {
+                    if (value === "-" || value === null || value === undefined) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
+                    const num = parseFloat(value);
+                    if (isNaN(num)) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
+                    if (num >= 0.7) return { color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" };
+                    if (num >= 0.4) return { color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
+                    return { color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+                  }
+                  if (type === 'moisture') {
+                    if (value === "-" || value === null || value === undefined) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
+                    const num = parseFloat(value);
+                    if (isNaN(num)) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
+                    if (num >= 0.7) return { color: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200" };
+                    if (num >= 0.4) return { color: "text-sky-600", bg: "bg-sky-50", border: "border-sky-200" };
+                    return { color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" };
+                  }
+                  if (type === 'diseaseRisk') {
+                    const num = Number(value) || 0;
+                    if (num >= 60) return { color: "text-red-600", bg: "bg-red-50", border: "border-red-200" };
+                    if (num >= 30) return { color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" };
+                    return { color: "text-lime-600", bg: "bg-lime-50", border: "border-lime-200" };
+                  }
+                  if (type === 'pestRisk') {
+                    const num = Number(value) || 0;
+                    if (num >= 60) return { color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" };
+                    if (num >= 30) return { color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-200" };
+                    return { color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
+                  }
+                  if (type === 'stressIndex') {
+                    const num = Number(value) || 0;
+                    if (num >= 60) return { color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+                    if (num >= 30) return { color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" };
+                    return { color: "text-green-600", bg: "bg-green-50", border: "border-green-200" };
+                  }
+                  return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
                 };
-              }
-              
-              if (!metrics) {
-                metrics = {
-                  ndvi: "-",
-                  moisture: "-",
-                  diseaseRisk: 0,
-                  pestRisk: 0,
-                  stressIndex: 0,
+
+                // Helper to style change badges consistently
+                const getChangeBadge = (change) => {
+                  if (change === null || change === undefined || isNaN(change)) return null;
+                  const num = parseFloat(change);
+                  const sign = num > 0 ? "+" : "";
+                  let colorClasses = "bg-gray-50 text-gray-600 border-gray-200";
+                  if (num > 5) colorClasses = "bg-green-100 text-green-700 border-green-200";
+                  else if (num > 0) colorClasses = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                  else if (num < -5) colorClasses = "bg-rose-100 text-rose-700 border-rose-200";
+                  else if (num < 0) colorClasses = "bg-amber-50 text-amber-700 border-amber-200";
+
+                  return {
+                    label: num === 0 ? "No change" : `${sign}${num.toFixed(1)}%`,
+                    colorClasses
+                  };
                 };
-              }
 
-              // Helper function to get metric status color with variety
-              const getMetricStatus = (value, type) => {
-                if (type === 'ndvi') {
-                  if (value === "-" || value === null || value === undefined) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
-                  const num = parseFloat(value);
-                  if (isNaN(num)) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
-                  if (num >= 0.7) return { color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" };
-                  if (num >= 0.4) return { color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
-                  return { color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
-                }
-                if (type === 'moisture') {
-                  if (value === "-" || value === null || value === undefined) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
-                  const num = parseFloat(value);
-                  if (isNaN(num)) return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
-                  if (num >= 0.7) return { color: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200" };
-                  if (num >= 0.4) return { color: "text-sky-600", bg: "bg-sky-50", border: "border-sky-200" };
-                  return { color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" };
-                }
-                if (type === 'diseaseRisk') {
-                  const num = Number(value) || 0;
-                  if (num >= 60) return { color: "text-red-600", bg: "bg-red-50", border: "border-red-200" };
-                  if (num >= 30) return { color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" };
-                  return { color: "text-lime-600", bg: "bg-lime-50", border: "border-lime-200" };
-                }
-                if (type === 'pestRisk') {
-                  const num = Number(value) || 0;
-                  if (num >= 60) return { color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" };
-                  if (num >= 30) return { color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-200" };
-                  return { color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
-                }
-                if (type === 'stressIndex') {
-                  const num = Number(value) || 0;
-                  if (num >= 60) return { color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
-                  if (num >= 30) return { color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" };
-                  return { color: "text-green-600", bg: "bg-green-50", border: "border-green-200" };
-                }
-                return { color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200" };
-              };
+                const ndviStatus = getMetricStatus(metrics.ndvi, 'ndvi');
+                const moistureStatus = getMetricStatus(metrics.moisture, 'moisture');
+                const diseaseStatus = getMetricStatus(metrics.diseaseRisk, 'diseaseRisk');
+                const pestStatus = getMetricStatus(metrics.pestRisk, 'pestRisk');
+                const stressStatus = getMetricStatus(metrics.stressIndex, 'stressIndex');
 
-              // Helper to style change badges consistently
-              const getChangeBadge = (change) => {
-                if (change === null || change === undefined || isNaN(change)) return null;
-                const num = parseFloat(change);
-                const sign = num > 0 ? "+" : "";
-                let colorClasses = "bg-gray-50 text-gray-600 border-gray-200";
-                if (num > 5) colorClasses = "bg-green-100 text-green-700 border-green-200";
-                else if (num > 0) colorClasses = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                else if (num < -5) colorClasses = "bg-rose-100 text-rose-700 border-rose-200";
-                else if (num < 0) colorClasses = "bg-amber-50 text-amber-700 border-amber-200";
-
-                return {
-                  label: num === 0 ? "No change" : `${sign}${num.toFixed(1)}%`,
-                  colorClasses
+                // Color scheme based on priority - using green shades for all
+                const priorityColors = {
+                  high: {
+                    card: "border-green-400 bg-gradient-to-br from-green-50/60 to-white",
+                    header: "bg-green-100/60 border-green-300",
+                    iconBg: "bg-green-300",
+                    advisory: "bg-amber-50/50 border-amber-200",
+                    advisoryIcon: "bg-amber-200 text-amber-700",
+                    advisoryDot: "bg-amber-500"
+                  },
+                  medium: {
+                    card: "border-green-300 bg-gradient-to-br from-green-50/40 to-white",
+                    header: "bg-green-100/40 border-green-200",
+                    iconBg: "bg-green-200",
+                    advisory: "bg-teal-50/50 border-teal-200",
+                    advisoryIcon: "bg-teal-200 text-teal-700",
+                    advisoryDot: "bg-teal-500"
+                  },
+                  low: {
+                    card: "border-green-200 bg-gradient-to-br from-green-50/30 to-white",
+                    header: "bg-green-100/30 border-green-200",
+                    iconBg: "bg-green-200",
+                    advisory: "bg-emerald-50/50 border-emerald-200",
+                    advisoryIcon: "bg-emerald-200 text-emerald-700",
+                    advisoryDot: "bg-emerald-500"
+                  }
                 };
-              };
 
-              const ndviStatus = getMetricStatus(metrics.ndvi, 'ndvi');
-              const moistureStatus = getMetricStatus(metrics.moisture, 'moisture');
-              const diseaseStatus = getMetricStatus(metrics.diseaseRisk, 'diseaseRisk');
-              const pestStatus = getMetricStatus(metrics.pestRisk, 'pestRisk');
-              const stressStatus = getMetricStatus(metrics.stressIndex, 'stressIndex');
+                const colors = priorityColors[alert.priority] || priorityColors.medium;
 
-              // Color scheme based on priority - using green shades for all
-              const priorityColors = {
-                high: {
-                  card: "border-green-400 bg-gradient-to-br from-green-50/60 to-white",
-                  header: "bg-green-100/60 border-green-300",
-                  iconBg: "bg-green-300",
-                  advisory: "bg-amber-50/50 border-amber-200",
-                  advisoryIcon: "bg-amber-200 text-amber-700",
-                  advisoryDot: "bg-amber-500"
-                },
-                medium: {
-                  card: "border-green-300 bg-gradient-to-br from-green-50/40 to-white",
-                  header: "bg-green-100/40 border-green-200",
-                  iconBg: "bg-green-200",
-                  advisory: "bg-teal-50/50 border-teal-200",
-                  advisoryIcon: "bg-teal-200 text-teal-700",
-                  advisoryDot: "bg-teal-500"
-                },
-                low: {
-                  card: "border-green-200 bg-gradient-to-br from-green-50/30 to-white",
-                  header: "bg-green-100/30 border-green-200",
-                  iconBg: "bg-green-200",
-                  advisory: "bg-emerald-50/50 border-emerald-200",
-                  advisoryIcon: "bg-emerald-200 text-emerald-700",
-                  advisoryDot: "bg-emerald-500"
-                }
-              };
-
-              const colors = priorityColors[alert.priority] || priorityColors.medium;
-
-              return (
-                <Card 
-                  key={alert.id} 
-                  className={cn(
-                    "group overflow-hidden border-2 transition-all duration-300 shadow-md hover:shadow-xl",
-                    colors.card
-                  )}
-                >
-                  {/* Header Section */}
-                  <div className={cn(
-                    "px-6 py-5 border-b",
-                    colors.header
-                  )}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "rounded-lg p-2.5",
-                          colors.iconBg
-                        )}>
-                          <Icon className={cn("h-5 w-5", conf.iconClass)} />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{alert.title}</h3>
-                          <p className="text-xs text-gray-500 mt-0.5">{alert.timestamp}</p>
-                        </div>
-                      </div>
-                      <Badge 
-                        variant={conf.badgeVariant} 
-                        className={cn(
-                          "capitalize text-xs px-2.5 py-1",
-                          alert.priority === "high" && "animate-pulse bg-green-600 text-white border-green-700",
-                          alert.priority === "medium" && "bg-green-500 text-white border-green-600",
-                          alert.priority === "low" && "bg-green-400 text-white border-green-500"
-                        )}
-                      >
-                        {alert.priority}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Metrics Grid */}
-                  <div className="p-6">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
-                      {/* NDVI Metric */}
-                      <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
-                        ndviStatus.border,
-                        "shadow-md"
-                      )}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Leaf className={cn("h-4 w-4", ndviStatus.color)} />
-                          <span className="text-xs font-semibold text-gray-700">NDVI</span>
-                        </div>
-                        <p className={cn("text-2xl font-bold mb-1", ndviStatus.color)}>
-                          {metrics.ndvi === "-" || metrics.ndvi === null || metrics.ndvi === undefined 
-                            ? "-" 
-                            : (isNaN(parseFloat(metrics.ndvi)) ? "-" : parseFloat(metrics.ndvi).toFixed(2))}
-                        </p>
-                        {(() => {
-                          const badge = getChangeBadge(metrics.ndviChange);
-                          return badge ? (
-                            <div className={cn(
-                              "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
-                              badge.colorClasses
-                            )}>
-                              <span>{badge.label}</span>
-                              <span className="text-[10px] text-gray-500">vs prev</span>
-                            </div>
-                          ) : null;
-                        })()}
-                          <p className="text-xs text-gray-500 mb-2">Vegetation</p>
-                        <div className="mt-auto pt-2 border-t border-gray-200">
-                          {(() => {
-                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
-                            return descriptions[descKey]?.ndvi ? (
-                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
-                                {descriptions[descKey].ndvi}
-                              </p>
-                            ) : loadingDescriptions[descKey] ? (
-                              <p className="text-xs text-gray-400 italic">Generating description...</p>
-                            ) : (
-                            <p className="text-xs text-gray-600 italic">
-                              {(() => {
-                                const ndvi = parseFloat(metrics.ndvi) || 0;
-                                if (ndvi >= 0.7) return 'Excellent crop health. Vegetation is very healthy.';
-                                if (ndvi >= 0.4) return 'Good crop health. Monitor regularly.';
-                                if (ndvi >= 0.2) return 'Moderate health. Some areas need attention.';
-                                return 'Poor health. Action may be required.';
-                              })()}
-                            </p>
-                          );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Moisture Metric */}
-                      <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
-                        moistureStatus.border,
-                        "shadow-md"
-                      )}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Droplets className={cn("h-4 w-4", moistureStatus.color)} />
-                          <span className="text-xs font-semibold text-gray-700">Moisture</span>
-                        </div>
-                        <p className={cn("text-2xl font-bold mb-1", moistureStatus.color)}>
-                          {metrics.moisture === "-" || metrics.moisture === null || metrics.moisture === undefined 
-                            ? "-" 
-                            : (isNaN(parseFloat(metrics.moisture)) ? "-" : parseFloat(metrics.moisture).toFixed(2))}
-                        </p>
-                        {(() => {
-                          const badge = getChangeBadge(metrics.moistureChange);
-                          return badge ? (
-                            <div className={cn(
-                              "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
-                              badge.colorClasses
-                            )}>
-                              <span>{badge.label}</span>
-                              <span className="text-[10px] text-gray-500">vs prev</span>
-                            </div>
-                          ) : null;
-                        })()}
-                          <p className="text-xs text-gray-500 mb-2">Soil</p>
-                        <div className="mt-auto pt-2 border-t border-gray-200">
-                          {(() => {
-                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
-                            return descriptions[descKey]?.moisture ? (
-                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
-                                {descriptions[descKey].moisture}
-                              </p>
-                            ) : loadingDescriptions[descKey] ? (
-                              <p className="text-xs text-gray-400 italic">Generating description...</p>
-                            ) : (
-                            <p className="text-xs text-gray-600 italic">
-                              {(() => {
-                                const moisture = parseFloat(metrics.moisture) || 0;
-                                if (moisture >= 60) return 'Adequate moisture. Irrigation may not be needed.';
-                                if (moisture >= 40) return 'Moderate moisture. Monitor and irrigate if needed.';
-                                return 'Soil is dry. Irrigation recommended.';
-                              })()}
-                            </p>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Disease Risk Metric */}
-                      <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
-                        diseaseStatus.border,
-                        "shadow-md"
-                      )}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Activity className={cn("h-4 w-4", diseaseStatus.color)} />
-                          <span className="text-xs font-semibold text-gray-700">Disease</span>
-                        </div>
-                        <p className={cn("text-2xl font-bold mb-1", diseaseStatus.color)}>
-                          {metrics.diseaseRisk}%
-                        </p>
-                        {(() => {
-                          const badge = getChangeBadge(metrics.diseaseChange);
-                          return badge ? (
-                            <div className={cn(
-                              "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
-                              badge.colorClasses
-                            )}>
-                              <span>{badge.label}</span>
-                              <span className="text-[10px] text-gray-500">vs prev</span>
-                            </div>
-                          ) : null;
-                        })()}
-                        <p className="text-xs text-gray-500 mb-2">Risk</p>
-                        <div className="mt-auto pt-2 border-t border-gray-200">
-                          {(() => {
-                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
-                            return descriptions[descKey]?.diseaseRisk ? (
-                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
-                                {descriptions[descKey].diseaseRisk}
-                              </p>
-                            ) : loadingDescriptions[descKey] ? (
-                              <p className="text-xs text-gray-400 italic">Generating description...</p>
-                            ) : (
-                            <p className="text-xs text-gray-600 italic">
-                              {(() => {
-                                const risk = parseInt(metrics.diseaseRisk) || 0;
-                                if (risk >= 60) return 'High disease risk. Take preventive measures immediately.';
-                                if (risk >= 30) return 'Moderate risk. Monitor crops closely.';
-                                return 'Low disease risk. Continue regular monitoring.';
-                              })()}
-                            </p>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Pest Risk Metric */}
-                      <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
-                        pestStatus.border,
-                        "shadow-md"
-                      )}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Bug className={cn("h-4 w-4", pestStatus.color)} />
-                          <span className="text-xs font-semibold text-gray-700">Pest</span>
-                        </div>
-                        <p className={cn("text-2xl font-bold mb-1", pestStatus.color)}>
-                          {metrics.pestRisk}%
-                        </p>
-                        {(() => {
-                          const badge = getChangeBadge(metrics.pestChange);
-                          return badge ? (
-                            <div className={cn(
-                              "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
-                              badge.colorClasses
-                            )}>
-                              <span>{badge.label}</span>
-                              <span className="text-[10px] text-gray-500">vs prev</span>
-                            </div>
-                          ) : null;
-                        })()}
-                        <p className="text-xs text-gray-500 mb-2">Risk</p>
-                        <div className="mt-auto pt-2 border-t border-gray-200">
-                          {(() => {
-                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
-                            return descriptions[descKey]?.pestRisk ? (
-                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
-                                {descriptions[descKey].pestRisk}
-                              </p>
-                            ) : loadingDescriptions[descKey] ? (
-                              <p className="text-xs text-gray-400 italic">Generating description...</p>
-                            ) : (
-                            <p className="text-xs text-gray-600 italic">
-                              {(() => {
-                                const risk = parseInt(metrics.pestRisk) || 0;
-                                if (risk >= 60) return 'High pest risk. Apply pest control measures.';
-                                if (risk >= 30) return 'Moderate risk. Monitor for pest activity.';
-                                return 'Low pest risk. Continue regular monitoring.';
-                              })()}
-                            </p>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Stress Index Metric */}
-                      <div className={cn(
-                        "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
-                        stressStatus.border,
-                        "shadow-md"
-                      )}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <AlertCircle className={cn("h-4 w-4", stressStatus.color)} />
-                          <span className="text-xs font-semibold text-gray-700">Stress</span>
-                        </div>
-                        <p className={cn("text-2xl font-bold mb-1", stressStatus.color)}>
-                          {metrics.stressIndex}%
-                        </p>
-                        <p className="text-xs text-gray-500 mb-2">Index</p>
-                        <div className="mt-auto pt-2 border-t border-gray-200">
-                          {(() => {
-                            const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
-                            return descriptions[descKey]?.stressIndex ? (
-                              <p className="text-xs text-gray-800 leading-relaxed font-medium">
-                                {descriptions[descKey].stressIndex}
-                              </p>
-                            ) : loadingDescriptions[descKey] ? (
-                              <p className="text-xs text-gray-400 italic">Generating description...</p>
-                            ) : (
-                            <p className="text-xs text-gray-600 italic">
-                              {(() => {
-                                const stress = parseInt(metrics.stressIndex) || 0;
-                                if (stress >= 60) return 'High crop stress. Check irrigation and nutrients.';
-                                if (stress >= 30) return 'Moderate stress. Monitor conditions.';
-                                return 'Low crop stress. Crops are healthy.';
-                              })()}
-                            </p>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Advisory Section */}
+                return (
+                  <Card
+                    key={alert.id}
+                    className={cn(
+                      "group overflow-hidden border-2 transition-all duration-300 shadow-md hover:shadow-xl",
+                      colors.card
+                    )}
+                  >
+                    {/* Header Section */}
                     <div className={cn(
-                      "rounded-lg p-5 border-2 bg-white shadow-md",
-                      alert.priority === "high" ? "border-amber-300" :
-                      alert.priority === "medium" ? "border-teal-300" :
-                      "border-emerald-300"
+                      "px-6 py-5 border-b",
+                      colors.header
                     )}>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className={cn(
-                          "rounded-md p-2",
-                          colors.advisoryIcon
-                        )}>
-                          <CheckCircle2 className="h-5 w-5" />
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "rounded-lg p-2.5",
+                            colors.iconBg
+                          )}>
+                            <Icon className={cn("h-5 w-5", conf.iconClass)} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{alert.title}</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{alert.timestamp}</p>
+                          </div>
                         </div>
-                        <h4 className="text-base font-bold text-gray-900">Farm Advisory</h4>
+                        <Badge
+                          variant={conf.badgeVariant}
+                          className={cn(
+                            "capitalize text-xs px-2.5 py-1",
+                            alert.priority === "high" && "animate-pulse bg-green-600 text-white border-green-700",
+                            alert.priority === "medium" && "bg-green-500 text-white border-green-600",
+                            alert.priority === "low" && "bg-green-400 text-white border-green-500"
+                          )}
+                        >
+                          {alert.priority}
+                        </Badge>
                       </div>
-                      <ul className="space-y-4 mb-4">
-                        {(alert.actions && alert.actions.length > 0) ? (
-                          alert.actions.map((a, i) => (
-                            <li key={i} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
-                              <div className={cn(
-                                "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
-                                colors.advisoryDot
-                              )} />
-                              <div className="flex-1">
-                                <span className="text-sm text-gray-900 leading-relaxed font-bold block">
-                                  {a}
-                                </span>
-                              </div>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="text-sm text-gray-500 italic">No specific advisory available at this time.</li>
-                        )}
-                      </ul>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 mt-6">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => sendAlertToAgenticAI(alert)}
-                        className="px-6 border-blue-500 text-blue-600 hover:bg-blue-50"
-                      >
-                        <Bell className="h-4 w-4" /> Send to Phone
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={() => deleteAlert(alert.id)}
-                        className="px-6 hover:bg-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </Button>
+                    {/* Metrics Grid */}
+                    <div className="p-6">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+                        {/* NDVI Metric */}
+                        <div className={cn(
+                          "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
+                          ndviStatus.border,
+                          "shadow-md"
+                        )}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Leaf className={cn("h-4 w-4", ndviStatus.color)} />
+                            <span className="text-xs font-semibold text-gray-700">NDVI</span>
+                          </div>
+                          <p className={cn("text-2xl font-bold mb-1", ndviStatus.color)}>
+                            {metrics.ndvi === "-" || metrics.ndvi === null || metrics.ndvi === undefined
+                              ? "-"
+                              : (isNaN(parseFloat(metrics.ndvi)) ? "-" : parseFloat(metrics.ndvi).toFixed(2))}
+                          </p>
+                          {(() => {
+                            const badge = getChangeBadge(metrics.ndviChange);
+                            return badge ? (
+                              <div className={cn(
+                                "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                badge.colorClasses
+                              )}>
+                                <span>{badge.label}</span>
+                                <span className="text-[10px] text-gray-500">vs prev</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          <p className="text-xs text-gray-500 mb-2">Vegetation</p>
+                          <div className="mt-auto pt-2 border-t border-gray-200">
+                            {(() => {
+                              const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                              return descriptions[descKey]?.ndvi ? (
+                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                  {descriptions[descKey].ndvi}
+                                </p>
+                              ) : loadingDescriptions[descKey] ? (
+                                <p className="text-xs text-gray-400 italic">Generating description...</p>
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  {(() => {
+                                    const ndvi = parseFloat(metrics.ndvi) || 0;
+                                    if (ndvi >= 0.7) return 'Excellent crop health. Vegetation is very healthy.';
+                                    if (ndvi >= 0.4) return 'Good crop health. Monitor regularly.';
+                                    if (ndvi >= 0.2) return 'Moderate health. Some areas need attention.';
+                                    return 'Poor health. Action may be required.';
+                                  })()}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Moisture Metric */}
+                        <div className={cn(
+                          "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
+                          moistureStatus.border,
+                          "shadow-md"
+                        )}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Droplets className={cn("h-4 w-4", moistureStatus.color)} />
+                            <span className="text-xs font-semibold text-gray-700">Moisture</span>
+                          </div>
+                          <p className={cn("text-2xl font-bold mb-1", moistureStatus.color)}>
+                            {metrics.moisture === "-" || metrics.moisture === null || metrics.moisture === undefined
+                              ? "-"
+                              : (isNaN(parseFloat(metrics.moisture)) ? "-" : parseFloat(metrics.moisture).toFixed(2))}
+                          </p>
+                          {(() => {
+                            const badge = getChangeBadge(metrics.moistureChange);
+                            return badge ? (
+                              <div className={cn(
+                                "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                badge.colorClasses
+                              )}>
+                                <span>{badge.label}</span>
+                                <span className="text-[10px] text-gray-500">vs prev</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          <p className="text-xs text-gray-500 mb-2">Soil</p>
+                          <div className="mt-auto pt-2 border-t border-gray-200">
+                            {(() => {
+                              const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                              return descriptions[descKey]?.moisture ? (
+                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                  {descriptions[descKey].moisture}
+                                </p>
+                              ) : loadingDescriptions[descKey] ? (
+                                <p className="text-xs text-gray-400 italic">Generating description...</p>
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  {(() => {
+                                    const moisture = parseFloat(metrics.moisture) || 0;
+                                    if (moisture >= 60) return 'Adequate moisture. Irrigation may not be needed.';
+                                    if (moisture >= 40) return 'Moderate moisture. Monitor and irrigate if needed.';
+                                    return 'Soil is dry. Irrigation recommended.';
+                                  })()}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Disease Risk Metric */}
+                        <div className={cn(
+                          "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
+                          diseaseStatus.border,
+                          "shadow-md"
+                        )}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Activity className={cn("h-4 w-4", diseaseStatus.color)} />
+                            <span className="text-xs font-semibold text-gray-700">Disease</span>
+                          </div>
+                          <p className={cn("text-2xl font-bold mb-1", diseaseStatus.color)}>
+                            {metrics.diseaseRisk}%
+                          </p>
+                          {(() => {
+                            const badge = getChangeBadge(metrics.diseaseChange);
+                            return badge ? (
+                              <div className={cn(
+                                "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                badge.colorClasses
+                              )}>
+                                <span>{badge.label}</span>
+                                <span className="text-[10px] text-gray-500">vs prev</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          <p className="text-xs text-gray-500 mb-2">Risk</p>
+                          <div className="mt-auto pt-2 border-t border-gray-200">
+                            {(() => {
+                              const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                              return descriptions[descKey]?.diseaseRisk ? (
+                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                  {descriptions[descKey].diseaseRisk}
+                                </p>
+                              ) : loadingDescriptions[descKey] ? (
+                                <p className="text-xs text-gray-400 italic">Generating description...</p>
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  {(() => {
+                                    const risk = parseInt(metrics.diseaseRisk) || 0;
+                                    if (risk >= 60) return 'High disease risk. Take preventive measures immediately.';
+                                    if (risk >= 30) return 'Moderate risk. Monitor crops closely.';
+                                    return 'Low disease risk. Continue regular monitoring.';
+                                  })()}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Pest Risk Metric */}
+                        <div className={cn(
+                          "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
+                          pestStatus.border,
+                          "shadow-md"
+                        )}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Bug className={cn("h-4 w-4", pestStatus.color)} />
+                            <span className="text-xs font-semibold text-gray-700">Pest</span>
+                          </div>
+                          <p className={cn("text-2xl font-bold mb-1", pestStatus.color)}>
+                            {metrics.pestRisk}%
+                          </p>
+                          {(() => {
+                            const badge = getChangeBadge(metrics.pestChange);
+                            return badge ? (
+                              <div className={cn(
+                                "inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                badge.colorClasses
+                              )}>
+                                <span>{badge.label}</span>
+                                <span className="text-[10px] text-gray-500">vs prev</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          <p className="text-xs text-gray-500 mb-2">Risk</p>
+                          <div className="mt-auto pt-2 border-t border-gray-200">
+                            {(() => {
+                              const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                              return descriptions[descKey]?.pestRisk ? (
+                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                  {descriptions[descKey].pestRisk}
+                                </p>
+                              ) : loadingDescriptions[descKey] ? (
+                                <p className="text-xs text-gray-400 italic">Generating description...</p>
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  {(() => {
+                                    const risk = parseInt(metrics.pestRisk) || 0;
+                                    if (risk >= 60) return 'High pest risk. Apply pest control measures.';
+                                    if (risk >= 30) return 'Moderate risk. Monitor for pest activity.';
+                                    return 'Low pest risk. Continue regular monitoring.';
+                                  })()}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Stress Index Metric */}
+                        <div className={cn(
+                          "rounded-lg p-4 border-2 bg-white transition-all hover:shadow-md min-h-[140px] flex flex-col",
+                          stressStatus.border,
+                          "shadow-md"
+                        )}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <AlertCircle className={cn("h-4 w-4", stressStatus.color)} />
+                            <span className="text-xs font-semibold text-gray-700">Stress</span>
+                          </div>
+                          <p className={cn("text-2xl font-bold mb-1", stressStatus.color)}>
+                            {metrics.stressIndex}%
+                          </p>
+                          <p className="text-xs text-gray-500 mb-2">Index</p>
+                          <div className="mt-auto pt-2 border-t border-gray-200">
+                            {(() => {
+                              const descKey = selectedField?.id ? `${selectedField.id}_${alert.id}` : alert.id;
+                              return descriptions[descKey]?.stressIndex ? (
+                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                  {descriptions[descKey].stressIndex}
+                                </p>
+                              ) : loadingDescriptions[descKey] ? (
+                                <p className="text-xs text-gray-400 italic">Generating description...</p>
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  {(() => {
+                                    const stress = parseInt(metrics.stressIndex) || 0;
+                                    if (stress >= 60) return 'High crop stress. Check irrigation and nutrients.';
+                                    if (stress >= 30) return 'Moderate stress. Monitor conditions.';
+                                    return 'Low crop stress. Crops are healthy.';
+                                  })()}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Advisory Section */}
+                      <div className={cn(
+                        "rounded-lg p-5 border-2 bg-white shadow-md",
+                        alert.priority === "high" ? "border-amber-300" :
+                          alert.priority === "medium" ? "border-teal-300" :
+                            "border-emerald-300"
+                      )}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={cn(
+                            "rounded-md p-2",
+                            colors.advisoryIcon
+                          )}>
+                            <CheckCircle2 className="h-5 w-5" />
+                          </div>
+                          <h4 className="text-base font-bold text-gray-900">Farm Advisory</h4>
+                        </div>
+                        <ul className="space-y-4 mb-4">
+                          {(alert.actions && alert.actions.length > 0) ? (
+                            alert.actions.map((a, i) => (
+                              <li key={i} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
+                                <div className={cn(
+                                  "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
+                                  colors.advisoryDot
+                                )} />
+                                <div className="flex-1">
+                                  <span className="text-sm text-gray-900 leading-relaxed font-bold block">
+                                    {a}
+                                  </span>
+                                </div>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="text-sm text-gray-500 italic">No specific advisory available at this time.</li>
+                          )}
+                        </ul>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-3 mt-6">
+                        <Button
+                          variant="outline"
+                          onClick={() => sendAlertToAgenticAI(alert)}
+                          className="px-6 border-blue-500 text-blue-600 hover:bg-blue-50"
+                        >
+                          <Bell className="h-4 w-4" /> Send to Phone
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => deleteAlert(alert.id)}
+                          className="px-6 hover:bg-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                  </Card>
+                );
+              })}
+            </div>
           )}
 
           {!loading && !error && isVendor && (
-          <div className="space-y-4">
-            {chatAlerts.length === 0 ? (
-              <Card className="p-12 text-center border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="rounded-full bg-gray-100 p-4">
-                    <Bell className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-semibold text-gray-900">No new queries</p>
-                    <p className="text-sm text-gray-600 mt-2">
-                      You don't have any unread messages from farmers.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              chatAlerts.map((item) => (
-                <Card
-                  key={item.id}
-                  className="group overflow-hidden border-2 border-green-200 bg-gradient-to-br from-green-50/50 to-white shadow-md hover:shadow-xl transition-all duration-300"
-                >
-                  {/* Header */}
-                  <div className="px-6 py-4 border-b-2 border-green-200 bg-green-100/50">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className="mt-1 rounded-xl p-3 bg-green-200 shadow-sm">
-                          <Bell className="h-6 w-6 text-green-700" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            New Query from {item.farmerName}
-                          </h3>
-                          {item.lastSenderName && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              Last message by {item.lastSenderName}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <Badge 
-                        variant="default" 
-                        className="capitalize text-sm px-3 py-1.5 bg-blue-600 text-white shadow-sm animate-pulse"
-                      >
-                        Unread
-                      </Badge>
+            <div className="space-y-4">
+              {chatAlerts.length === 0 ? (
+                <Card className="p-12 text-center border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="rounded-full bg-gray-100 p-4">
+                      <Bell className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-semibold text-gray-900">No new queries</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        You don't have any unread messages from farmers.
+                      </p>
                     </div>
                   </div>
-
-                  {/* Message Content */}
-                  <div className="p-6">
-                    {item.lastMessage && (
-                      <div className="rounded-xl p-5 bg-blue-50/50 border-2 border-blue-200 mb-6">
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {item.lastMessage}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Button
-                      variant="outline"
-                      className="w-full border-2 hover:bg-green-50 hover:border-green-300 text-base py-6"
-                      onClick={() => navigate(`/chat/${item.otherUserId}`)}
-                    >
-                      <Bell className="h-5 w-5 mr-2" />
-                      Open Chat Conversation
-                    </Button>
-                  </div>
                 </Card>
-              ))
-            )}
-          </div>
+              ) : (
+                chatAlerts.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="group overflow-hidden border-2 border-green-200 bg-gradient-to-br from-green-50/50 to-white shadow-md hover:shadow-xl transition-all duration-300"
+                  >
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b-2 border-green-200 bg-green-100/50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="mt-1 rounded-xl p-3 bg-green-200 shadow-sm">
+                            <Bell className="h-6 w-6 text-green-700" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900">
+                              New Query from {item.farmerName}
+                            </h3>
+                            {item.lastSenderName && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                Last message by {item.lastSenderName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge
+                          variant="default"
+                          className="capitalize text-sm px-3 py-1.5 bg-blue-600 text-white shadow-sm animate-pulse"
+                        >
+                          Unread
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Message Content */}
+                    <div className="p-6">
+                      {item.lastMessage && (
+                        <div className="rounded-xl p-5 bg-blue-50/50 border-2 border-blue-200 mb-6">
+                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {item.lastMessage}
+                          </p>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 hover:bg-green-50 hover:border-green-300 text-base py-6"
+                        onClick={() => navigate(`/chat/${item.otherUserId}`)}
+                      >
+                        <Bell className="h-5 w-5 mr-2" />
+                        Open Chat Conversation
+                      </Button>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
           )}
 
           {/* Summary */}
           {!loading && !error && !isVendor && (
-          <Card className="overflow-hidden border-2 border-green-400 bg-gradient-to-br from-green-50/60 to-white shadow-md hover:shadow-xl transition-all duration-300">
-            {/* Header Section */}
-            <div className="px-6 py-5 border-b bg-green-100/60 border-green-300">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg p-2.5 bg-green-300">
-                  <Bell className="h-5 w-5 text-green-700" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Alert Summary</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Total alerts for selected period</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Content Section */}
-            <div className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg p-4 border-2 border-green-300 bg-white shadow-md">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Alerts</p>
-                  <p className="text-4xl font-bold text-green-700">{currentAlerts.length}</p>
+            <Card className="overflow-hidden border-2 border-green-400 bg-gradient-to-br from-green-50/60 to-white shadow-md hover:shadow-xl transition-all duration-300">
+              {/* Header Section */}
+              <div className="px-6 py-5 border-b bg-green-100/60 border-green-300">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg p-2.5 bg-green-300">
+                    <Bell className="h-5 w-5 text-green-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Alert Summary</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Total alerts for selected period</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+
+              {/* Content Section */}
+              <div className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg p-4 border-2 border-green-300 bg-white shadow-md">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Alerts</p>
+                    <p className="text-4xl font-bold text-green-700">{currentAlerts.length}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
           )}
 
           {!loading && !error && isVendor && (
-          <Card className="overflow-hidden border-2 border-green-400 bg-gradient-to-br from-green-50/60 to-white shadow-md hover:shadow-xl transition-all duration-300">
-            {/* Header Section */}
-            <div className="px-6 py-5 border-b bg-green-100/60 border-green-300">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg p-2.5 bg-green-300">
-                  <Bell className="h-5 w-5 text-green-700" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Notification Summary</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Total unread queries from farmers</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Content Section */}
-            <div className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg p-4 border-2 border-green-300 bg-white shadow-md">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Unread Queries</p>
-                  <p className="text-4xl font-bold text-green-700">{chatAlerts.length}</p>
+            <Card className="overflow-hidden border-2 border-green-400 bg-gradient-to-br from-green-50/60 to-white shadow-md hover:shadow-xl transition-all duration-300">
+              {/* Header Section */}
+              <div className="px-6 py-5 border-b bg-green-100/60 border-green-300">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg p-2.5 bg-green-300">
+                    <Bell className="h-5 w-5 text-green-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Notification Summary</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Total unread queries from farmers</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+
+              {/* Content Section */}
+              <div className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg p-4 border-2 border-green-300 bg-white shadow-md">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Unread Queries</p>
+                    <p className="text-4xl font-bold text-green-700">{chatAlerts.length}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
           )}
 
         </div>

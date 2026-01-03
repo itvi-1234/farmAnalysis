@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/authcontext/Authcontext";
 import { db } from "../../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
+import { API_BASE } from "../../api/endpoints";
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 }; // India centroid fallback
 
@@ -113,7 +114,7 @@ const ReferenceIndexDisplay = ({ indexType, legendConfig, t }) => {
         {/* Analysis Scale */}
         <div className="space-y-3">
           <h5 className="text-sm font-semibold text-gray-800">{t("crop_analysis_scale_title")}</h5>
-          
+
           {/* Health Status Icons */}
           <div className="flex items-center justify-between gap-2">
             {(() => {
@@ -270,20 +271,20 @@ const VegetationIndexCard = ({ field, onHeatmapReady }) => {
     setDominantLabel("");
     setHeatmapUrl("");
     onHeatmapReady?.(null);
-    
+
     try {
       console.log(`🚀 Requesting ${type} Analysis...`);
-      
-      const response = await fetch("http://localhost:5000/api/analyze-ndvi", {
+
+      const response = await fetch(`${API_BASE}/api/analyze-ndvi`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            lat,
-            lng,
-            indexType: type,
-            radius: rad,
-            polygon: polygonCoords,
-            bounds: polygonBounds
+        body: JSON.stringify({
+          lat,
+          lng,
+          indexType: type,
+          radius: rad,
+          polygon: polygonCoords,
+          bounds: polygonBounds
         }),
       });
 
@@ -295,9 +296,9 @@ const VegetationIndexCard = ({ field, onHeatmapReady }) => {
         if (data.heatmap_base64) {
           setHeatmapUrl(`data:image/png;base64,${data.heatmap_base64}`);
         }
-        
+
         if (data.statistics) {
-          const maxKey = Object.keys(data.statistics).reduce((a, b) => 
+          const maxKey = Object.keys(data.statistics).reduce((a, b) =>
             data.statistics[a] > data.statistics[b] ? a : b
           );
           setDominantLabel(maxKey);
@@ -431,7 +432,7 @@ const VegetationIndexCard = ({ field, onHeatmapReady }) => {
 
   return (
     <div className="rounded-2xl border border-gray-200 shadow-md bg-white/70 backdrop-blur-xl flex flex-col h-full">
-      
+
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white/50 backdrop-blur-md rounded-t-2xl">
         <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -441,14 +442,14 @@ const VegetationIndexCard = ({ field, onHeatmapReady }) => {
 
         <div className="flex gap-2">
           {field?.lat && field?.lng && (
-            <button 
+            <button
               onClick={handleRefresh}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <RefreshCw className={`h-4 w-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
             </button>
           )}
-          
+
           <div className="relative flex items-center gap-2">
             <select
               value={indexType}
@@ -542,11 +543,10 @@ const VegetationIndexCard = ({ field, onHeatmapReady }) => {
                 <div className="flex items-center gap-2 mt-2">
                   <button
                     onClick={() => setHeatmapVisible((prev) => !prev)}
-                    className={`text-xs px-3 py-1 rounded border transition-colors ${
-                      heatmapVisible
+                    className={`text-xs px-3 py-1 rounded border transition-colors ${heatmapVisible
                         ? 'bg-green-100 text-green-700 border-green-300'
                         : 'bg-gray-100 text-gray-600 border-gray-300'
-                    }`}
+                      }`}
                   >
                     {heatmapVisible ? t("crop_analysis_visible") : t("crop_analysis_hidden")}
                   </button>

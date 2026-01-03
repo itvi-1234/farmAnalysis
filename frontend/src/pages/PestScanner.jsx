@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/authcontext/Authcontext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { doSignOut } from "../firebase/auth";
 import { useTranslation } from "react-i18next";
+import { API_BASE } from "../api/endpoints";
 
 export default function PestScanner() {
   const { currentUser, userLoggedIn } = useAuth();
@@ -48,7 +49,7 @@ export default function PestScanner() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:5000/api/pest/predict", {
+      const response = await fetch(`${API_BASE}/api/pest/predict`, {
         method: "POST",
         body: formData,
       });
@@ -135,116 +136,116 @@ export default function PestScanner() {
                 </p>
               )}
 
-{/* RESULTS */}
-{result && (
-  <div className="mt-8 space-y-6">
+              {/* RESULTS */}
+              {result && (
+                <div className="mt-8 space-y-6">
 
-    {/* ====== DIAGNOSIS CARD (Red) ====== */}
-    <div className="bg-red-50 border border-red-200 rounded-xl p-5 shadow-sm">
-  <div className="flex items-center gap-2 mb-1">
-    <span className="text-red-600 text-xl">🩺</span>
-    <h3 className="text-sm font-bold text-red-700 uppercase tracking-wide">
-      {t("pest_diagnosis_title")}
-    </h3>
-  </div>
+                  {/* ====== DIAGNOSIS CARD (Red) ====== */}
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-red-600 text-xl">🩺</span>
+                      <h3 className="text-sm font-bold text-red-700 uppercase tracking-wide">
+                        {t("pest_diagnosis_title")}
+                      </h3>
+                    </div>
 
-  <div className="text-2xl font-extrabold text-red-700 leading-tight">
+                    <div className="text-2xl font-extrabold text-red-700 leading-tight">
 
-    {/* If SAFE */}
-    {result.status === "SAFE" && t("pest_no_infection")}
+                      {/* If SAFE */}
+                      {result.status === "SAFE" && t("pest_no_infection")}
 
-    {/* If NOT SAFE → Show Pest Name Instead of Count */}
-    {result.status !== "SAFE" &&
-      `${result.report?.[0]?.pest || t("pest_detected")}`}
-  </div>
+                      {/* If NOT SAFE → Show Pest Name Instead of Count */}
+                      {result.status !== "SAFE" &&
+                        `${result.report?.[0]?.pest || t("pest_detected")}`}
+                    </div>
 
-  {result.status !== "SAFE" && (
-    <p className="text-red-600 mt-1 text-sm">
-      {t("pest_detected_desc")}
-    </p>
-  )}
+                    {result.status !== "SAFE" && (
+                      <p className="text-red-600 mt-1 text-sm">
+                        {t("pest_detected_desc")}
+                      </p>
+                    )}
 
-  {result.status === "SAFE" && (
-    <p className="text-red-600 mt-1 text-sm">
-      {t("pest_safe_desc")}
-    </p>
-  )}
-</div>
+                    {result.status === "SAFE" && (
+                      <p className="text-red-600 mt-1 text-sm">
+                        {t("pest_safe_desc")}
+                      </p>
+                    )}
+                  </div>
 
 
-    {/* ====== SUGGESTED CURE CARD (Green) ====== */}
-{result.status !== "SAFE" && (
-  <div className="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
-    <div className="flex items-center gap-2 mb-2">
-      <span className="text-green-700 text-xl">🌱</span>
-      <h3 className="text-sm font-bold text-green-800 uppercase tracking-wide">
-        {t("pest_cure_title")}
-      </h3>
-    </div>
+                  {/* ====== SUGGESTED CURE CARD (Green) ====== */}
+                  {result.status !== "SAFE" && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-700 text-xl">🌱</span>
+                        <h3 className="text-sm font-bold text-green-800 uppercase tracking-wide">
+                          {t("pest_cure_title")}
+                        </h3>
+                      </div>
 
-    {/* Multiple pests → show multiple cures */}
-    <div className="space-y-3">
-      {result.report?.map((p, idx) => (
-        <div
-          key={idx}
-          className="bg-white p-3 rounded-lg border border-green-200 shadow-inner 
+                      {/* Multiple pests → show multiple cures */}
+                      <div className="space-y-3">
+                        {result.report?.map((p, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white p-3 rounded-lg border border-green-200 shadow-inner 
                      flex justify-center items-center"
-        >
-          {/* Cure Text Centered */}
-          <p className="text-gray-800 text-lg leading-relaxed text-center">
-            {p.solution}
-          </p>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+                          >
+                            {/* Cure Text Centered */}
+                            <p className="text-gray-800 text-lg leading-relaxed text-center">
+                              {p.solution}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
 
 
-    {/* ====== BUY MEDICINE (Blue) ====== */}
-    {result.status !== "SAFE" && (
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-blue-700 text-xl">🛒</span>
-          <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide">
-            Buy Medicine
-          </h3>
-        </div>
+                  {/* ====== BUY MEDICINE (Blue) ====== */}
+                  {result.status !== "SAFE" && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-blue-700 text-xl">🛒</span>
+                        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide">
+                          Buy Medicine
+                        </h3>
+                      </div>
 
-      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
 
-  {result.report?.map((p, idx) => (
-    <a
-      key={idx}
-      href={p.links?.amazon}
-      target="_blank"
-      className="block bg-orange-500 hover:bg-orange-600 text-white 
+                        {result.report?.map((p, idx) => (
+                          <a
+                            key={idx}
+                            href={p.links?.amazon}
+                            target="_blank"
+                            className="block bg-orange-500 hover:bg-orange-600 text-white 
                  text-sm text-center font-semibold py-2 rounded-md shadow-md"
-    >
-      Amazon
-    </a>
-  ))}
+                          >
+                            Amazon
+                          </a>
+                        ))}
 
-  {result.report?.map((p, idx) => (
-    <a
-      key={"f" + idx}
-      href={p.links?.flipkart}
-      target="_blank"
-      className="block bg-blue-600 hover:bg-blue-700 text-white 
+                        {result.report?.map((p, idx) => (
+                          <a
+                            key={"f" + idx}
+                            href={p.links?.flipkart}
+                            target="_blank"
+                            className="block bg-blue-600 hover:bg-blue-700 text-white 
                  text-sm text-center font-semibold py-2 rounded-md shadow-md"
-    >
-      Flipkart
-    </a>
-  ))}
+                          >
+                            Flipkart
+                          </a>
+                        ))}
 
-</div>
+                      </div>
 
-      </div>
-    )}
+                    </div>
+                  )}
 
-  </div>
-)}
+                </div>
+              )}
 
             </div>
 

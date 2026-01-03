@@ -19,3 +19,4 @@ build/
 service-account-key.json
 firebase-adminsdk-*.json
 
+.vercel

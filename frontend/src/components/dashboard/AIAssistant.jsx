@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { API_BASE } from '../../api/endpoints';
 
 const AIAssistant = () => {
   const [messages, setMessages] = useState([
@@ -27,7 +28,7 @@ const AIAssistant = () => {
 
   const generateGeminiResponse = async (userMessage) => {
     try {
-      const response = await fetch('http://localhost:5000/api/ai/generate', {
+      const response = await fetch(`${API_BASE}/api/ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +39,7 @@ const AIAssistant = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.response) {
         return data.response.trim();
       } else {
@@ -54,7 +55,7 @@ const AIAssistant = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!inputMessage.trim()) return;
 
     const userMsg = {
@@ -70,7 +71,7 @@ const AIAssistant = () => {
 
     try {
       const botResponse = await generateGeminiResponse(inputMessage);
-      
+
       const botMsg = {
         id: messages.length + 2,
         text: botResponse,
@@ -87,21 +88,21 @@ const AIAssistant = () => {
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   // Function to format text by removing markdown syntax and rendering properly
   const formatMessageText = (text) => {
     if (!text) return "";
-    
+
     // First, handle bold syntax (**text** or __text__) - remove the markers
     let formatted = text
       .replace(/\*\*(.*?)\*\*/g, (match, content) => content)
       .replace(/__(.*?)__/g, (match, content) => content);
-    
+
     // Handle italic syntax - be careful with single asterisks
     // Replace *text* but not **text** (already handled) or standalone asterisks
     formatted = formatted.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, (match, content) => {
@@ -111,18 +112,18 @@ const AIAssistant = () => {
       }
       return content;
     });
-    
+
     // Split by lines to handle multi-line text
     const lines = formatted.split('\n');
-    
+
     return lines.map((line, lineIndex) => {
       const trimmedLine = line.trim();
-      
+
       // Skip empty lines but preserve spacing
       if (!trimmedLine) {
         return <React.Fragment key={lineIndex}>{lineIndex > 0 && <br />}</React.Fragment>;
       }
-      
+
       // Handle numbered lists (1. text or 1) text)
       const numberedMatch = trimmedLine.match(/^(\d+)\.\s*(.+)$/);
       if (numberedMatch) {
@@ -135,7 +136,7 @@ const AIAssistant = () => {
           </React.Fragment>
         );
       }
-      
+
       // Handle bullet points (- or *) - convert to bullet
       const bulletMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
       if (bulletMatch) {
@@ -146,7 +147,7 @@ const AIAssistant = () => {
           </React.Fragment>
         );
       }
-      
+
       // Regular line - preserve it
       return (
         <React.Fragment key={lineIndex}>
@@ -168,7 +169,7 @@ const AIAssistant = () => {
           <div className="absolute top-2 right-4 w-20 h-20 bg-white opacity-5 rounded-full blur-xl"></div>
           <div className="absolute bottom-2 left-4 w-16 h-16 bg-yellow-300 opacity-10 rounded-full blur-lg"></div>
         </div>
-        
+
         {/* Header Content */}
         <div className="relative z-10 p-6 border-b border-green-500">
           <div className="flex items-center gap-4">
@@ -180,7 +181,7 @@ const AIAssistant = () => {
               <Sparkles className="h-5 w-5 text-yellow-300 absolute -top-1 -right-1 animate-pulse" />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
             </div>
-            
+
             <div className="flex-1">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
                 AI Agriculture Assistant
@@ -188,7 +189,7 @@ const AIAssistant = () => {
               </h3>
               <p className="text-green-100 text-sm mt-1">Your Personal Farming Expert • 24/7 Available</p>
             </div>
-            
+
             {/* Status Badge */}
             <div className="flex items-center gap-2 bg-white bg-opacity-20 backdrop-blur-sm px-3 py-2 rounded-full">
               <div className="relative">
@@ -198,12 +199,12 @@ const AIAssistant = () => {
               <span className="text-white text-sm font-medium">Online</span>
             </div>
           </div>
-          
+
           {/* Feature Pills */}
           <div className="flex flex-wrap gap-2 mt-4">
             {[
               "🌱 Soil Health",
-              "Crop Advice", 
+              "Crop Advice",
               "💧 Irrigation",
               "🐛 Pest Control",
               "Weather Insights"
@@ -226,11 +227,10 @@ const AIAssistant = () => {
             >
               <div className={`flex gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
                 {/* Avatar */}
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-500 ml-2' 
-                    : 'bg-green-500 mr-2'
-                }`}>
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user'
+                  ? 'bg-blue-500 ml-2'
+                  : 'bg-green-500 mr-2'
+                  }`}>
                   {message.sender === 'user' ? (
                     <User className="h-5 w-5 text-white" />
                   ) : (
@@ -239,17 +239,15 @@ const AIAssistant = () => {
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`rounded-2xl px-4 py-3 ${
-                  message.sender === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white border border-gray-200 text-gray-800'
-                }`}>
+                <div className={`rounded-2xl px-4 py-3 ${message.sender === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white border border-gray-200 text-gray-800'
+                  }`}>
                   <div className="text-sm leading-relaxed">
                     {message.sender === 'bot' ? formatMessageText(message.text) : message.text}
                   </div>
-                  <p className={`text-xs mt-1 ${
-                    message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                  }`}>
+                  <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    }`}>
                     {formatTime(message.timestamp)}
                   </p>
                 </div>
@@ -296,7 +294,7 @@ const AIAssistant = () => {
             <Send className="h-5 w-5" />
           </button>
         </form>
-        
+
         {/* Quick Suggestions */}
         <div className="flex flex-wrap gap-2 mt-3">
           {[
